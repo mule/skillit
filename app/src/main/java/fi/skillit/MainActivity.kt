@@ -1,6 +1,10 @@
 package fi.skillit
 
 import android.os.Bundle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import fi.skillit.music.*
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
@@ -51,10 +55,24 @@ fun SkillitApp(repository: ProgressRepository) {
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var inGame by rememberSaveable { mutableStateOf(true) }
+    var practiceLevel by rememberSaveable { mutableStateOf(-1) }
+    var rhythm by rememberSaveable { mutableStateOf(false) }
     var settings by rememberSaveable { mutableStateOf(false) }
     var confirmReset by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val session = remember(progress) { progress?.let { ExerciseSession.restore(MusicPack.questions, it.events) } }
+    val audio = remember { PlaybackController(AndroidPcmOutput()) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle, audio) {
+        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) audio.stop() }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer); audio.close() }
+    }
+    LaunchedEffect(progress?.muted, progress?.volume) { audio.configure(progress?.muted ?: true, progress?.volume ?: .6f) }
+    LaunchedEffect(inGame, rhythm, settings, progress?.events?.size) { audio.stop() }
+    val adventure = remember(progress) { progress?.let { ExerciseSession.restore(MusicPack.questions, it.events) } }
+    val session = remember(progress, practiceLevel) { progress?.let {
+        if (practiceLevel < 0) adventure else ExerciseSession.restore(Adventure.questions(practiceLevel), it.practice[practiceLevel].orEmpty())
+    } }
     fun load() {
         busy = true
         scope.launch {
@@ -77,8 +95,10 @@ fun SkillitApp(repository: ProgressRepository) {
     fun act(action: (ExerciseSession) -> Boolean) {
         val saved = progress ?: return
         if (busy) return
-        val updated = ExerciseSession.restore(MusicPack.questions, saved.events)
-        if (action(updated)) save(saved.copy(events = updated.events))
+        val updated = if (practiceLevel < 0) ExerciseSession.restore(MusicPack.questions, saved.events)
+            else ExerciseSession.restore(Adventure.questions(practiceLevel), saved.practice[practiceLevel].orEmpty())
+        if (action(updated)) save(if (practiceLevel < 0) saved.copy(events = updated.events)
+            else saved.copy(practice = saved.practice + (practiceLevel to updated.events)))
     }
     LaunchedEffect(repository) { load() }
     Surface(Modifier.fillMaxSize()) {
@@ -102,34 +122,39 @@ fun SkillitApp(repository: ProgressRepository) {
                 val saved = progress
                 when {
                     saved == null -> if (busy) Text("Ladataan seikkailua…")
+                    rhythm -> RhythmScreen(audio, settings || confirmReset) { rhythm = false; inGame = false }
                     !saved.started || !inGame -> {
                         Text("Nuottiseikkailu", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.semantics { heading() })
                         Text("Tutki säveliä ja rytmejä omaan tahtiisi. Ei kiirettä!")
-                        MusicPack.levels.forEachIndexed { i, title ->
-                            Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) {
-                                Text("${i + 1}. $title", style = MaterialTheme.typography.titleMedium)
-                                Text("5 tehtävää")
-                            } }
+                        if (adventure != null) IslandMap(adventure, saved.practice.keys, busy) { level, _ ->
+                            save(saved.copy(practice = saved.practice + (level to saved.practice[level].orEmpty()))) {
+                                practiceLevel = level; inGame = true
+                            }
                         }
-                        Button(onClick = { save(saved.copy(started = true)) { inGame = true } }, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
-                            Text(if (saved.started) "Jatka seikkailua" else "Aloita seikkailu")
+                        Button(onClick = { save(saved.copy(started = true)) { practiceLevel = -1; inGame = true } }, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+                            Text(if (adventure?.complete == true) "Katso seikkailun tulos" else if (saved.started) "Jatka seikkailua" else "Aloita seikkailu")
                         }
+                        Button(onClick = { rhythm = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Rytmipaja") }
+                        SoundLab(audio, saved.muted || saved.volume == 0f)
                     }
                     session != null && session.complete -> {
-                        Text("Seikkailu valmis!", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.semantics { heading() })
-                        Text("Hienoa harjoittelua! Kävit läpi kaikki 20 tehtävää.")
-                        Text("${session.xp} XP", style = MaterialTheme.typography.headlineMedium)
-                        Text("Oikein ensimmäisellä yrityksellä: ${session.firstTryCorrect}/20")
+                        Text(if (practiceLevel < 0) "Seikkailu valmis!" else "Harjoituskierros valmis!", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.semantics { heading() })
+                        Text(if (practiceLevel < 0) "Hienoa harjoittelua! Kävit läpi kaikki 20 tehtävää." else "Saaren viisi tehtävää harjoiteltu. Seikkailun tulos säilyy.")
+                        Text(if (practiceLevel < 0) "${session.xp} XP" else "${session.xp} harjoitus-XP", style = MaterialTheme.typography.headlineMedium)
+                        Text("Oikein ensimmäisellä yrityksellä: ${session.firstTryCorrect}/${session.questions.size}")
                         Text("Harjoittelit uudelleen ${session.retryCount} tehtävää.")
-                        Button(onClick = { confirmReset = true }, enabled = !busy, modifier = Modifier.heightIn(min = 56.dp)) { Text("Uusi seikkailu") }
+                        if (practiceLevel < 0) Button(onClick = { confirmReset = true }, enabled = !busy, modifier = Modifier.heightIn(min = 56.dp)) { Text("Uusi seikkailu") }
+                        else Button(onClick = { save(saved.copy(practice = saved.practice + (practiceLevel to emptyList()))) }, enabled = !busy, modifier = Modifier.heightIn(min = 56.dp)) { Text("Uusi harjoituskierros") }
+                        TextButton(onClick = { inGame = false }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Etusivu") }
                     }
                     session?.current != null -> {
                         val attempt = session.current!!
                         val question = attempt.question
+                        if (practiceLevel >= 0) Text("Harjoituskierros · erilliset harjoitus-XP")
                         Text(MusicPack.levels[question.level], style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
-                        Text("Taso ${question.level + 1}/4 · ${session.resolvedCount}/20 ratkaistu · ${session.xp} XP")
-                        LinearProgressIndicator(progress = { session.resolvedCount / 20f }, modifier = Modifier.fillMaxWidth().semantics {
-                            contentDescription = "Edistyminen, ${session.resolvedCount} ratkaistua tehtävää kahdestakymmenestä"
+                        Text("Taso ${question.level + 1}/4 · ${session.resolvedCount}/${session.questions.size} ratkaistu · ${session.xp} XP")
+                        LinearProgressIndicator(progress = { session.resolvedCount.toFloat() / session.questions.size }, modifier = Modifier.fillMaxWidth().semantics {
+                            contentDescription = "Edistyminen, ${session.resolvedCount} ratkaistua tehtävää, yhteensä ${session.questions.size}"
                         })
                         if (attempt.retry) Text("Uusi yritys · voit saada 5 XP")
                         Text(question.prompt, style = MaterialTheme.typography.titleLarge)
@@ -177,15 +202,18 @@ fun SkillitApp(repository: ProgressRepository) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Äänet mykistetty", Modifier.weight(1f))
                 Switch(checked = progress?.muted ?: false, enabled = progress != null && !busy,
-                    onCheckedChange = { muted -> progress?.let { save(it.copy(muted = muted)) } },
+                    onCheckedChange = { muted -> audio.stop(); progress?.let { save(it.copy(muted = muted)) } },
                     modifier = Modifier.semantics { contentDescription = "Äänet mykistetty" })
             }
-            Text("Tässä seikkailussa ei ole ääntä.")
+            Text("Äänenvoimakkuus ${((progress?.volume ?: .6f) * 100).toInt()} %")
+            Slider(value = progress?.volume ?: .6f, onValueChange = { value -> progress?.let { save(it.copy(volume = value)) } },
+                steps = 9, enabled = progress != null && !busy,
+                modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Äänenvoimakkuus" })
             TextButton(onClick = { settings = false; confirmReset = true }, enabled = !busy) { Text("Nollaa edistyminen") }
         }
     }, confirmButton = { TextButton(onClick = { settings = false }) { Text("Sulje") } })
     if (confirmReset) AlertDialog(onDismissRequest = { confirmReset = false }, title = { Text("Aloitetaanko alusta?") },
         text = { Text("Tämän seikkailun tehtävät ja XP nollataan. Ääniasetus säilyy.") },
-        confirmButton = { TextButton(onClick = { save(SavedProgress(muted = progress?.muted ?: false)) { confirmReset = false; inGame = true } }, enabled = !busy) { Text("Nollaa") } },
+        confirmButton = { TextButton(onClick = { save(SavedProgress(muted = progress?.muted ?: false, volume = progress?.volume ?: .6f)) { confirmReset = false; inGame = true; practiceLevel = -1; rhythm = false } }, enabled = !busy) { Text("Nollaa") } },
         dismissButton = { TextButton(onClick = { confirmReset = false }, enabled = !busy) { Text("Peruuta") } })
 }
