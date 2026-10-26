@@ -50,8 +50,8 @@ branch is pushed. A local pass does not establish a GitHub Actions pass.
 
 ## M1 verification checkpoint (2026-10-26)
 
-Local verification: debug APK build, lint, 8 JVM tests and 7 Android instrumentation
-tests pass. The device suite passed on an API 35 emulator in airplane mode at
+Local verification: debug APK build, lint and 8 JVM tests pass. The 7-test Android
+instrumentation suite and a focused eighth storage-version regression test pass. The device suite passed on an API 35 emulator in airplane mode at
 360 dp portrait / 640 dp landscape with 150% font size. It covers a complete
 20-question session, wrong/retry feedback, hints, 195-XP mixed scoring, activity
 recreation, completion/reset/mute, accessible choice targets, position semantics,

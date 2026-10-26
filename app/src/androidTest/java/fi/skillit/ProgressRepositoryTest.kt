@@ -1,6 +1,10 @@
 package fi.skillit
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.edit
+import kotlinx.coroutines.flow.first
+import org.json.JSONObject
+import org.json.JSONArray
 import androidx.test.platform.app.InstrumentationRegistry
 import fi.skillit.engine.ExerciseSession
 import fi.skillit.music.MusicPack
@@ -63,6 +67,42 @@ class ProgressRepositoryTest {
         assertEquals(SavedProgress(), repository.load())
         scope.coroutineContext.job.cancelAndJoin()
         file.delete()
+        Unit
+    }
+    @Test fun staleVersionsAndRemovedQuestionsRequireRecoveryWithoutOverwritingTheSave() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val file = File(context.cacheDir, "stale-${System.nanoTime()}.preferences_pb")
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val store = PreferenceDataStoreFactory.create(scope = scope) { file }
+        val repository = ProgressRepository(store)
+        val base = """{"schema":1,"pack":"music-grade4-fi","version":1,"started":true,"muted":true,"events":[]}"""
+        val incompatible = listOf(
+            JSONObject(base).put("schema", 0),
+            JSONObject(base).put("schema", 2),
+            JSONObject(base).put("pack", "removed-pack"),
+            JSONObject(base).put("version", 0),
+            JSONObject(base).put("version", 2),
+            JSONObject(base).put("events", JSONArray("""[{"action":"ANSWER","token":"removed:0","choice":"o0"}]""")),
+        )
+        try {
+            incompatible.forEach { json ->
+                val raw = json.toString()
+                store.edit { it[ProgressRepository.key] = raw }
+                val failure = runCatching { repository.load() }.exceptionOrNull()
+                assertTrue("Incompatible save must request explicit recovery: $json", failure is IllegalArgumentException)
+                assertEquals(raw, store.data.first()[ProgressRepository.key])
+            }
+            // A forged aggregate cannot award XP: accepted history is the only source.
+            store.edit { it[ProgressRepository.key] = JSONObject(base).put("xp", 999).toString() }
+            val resumed = repository.load()
+            assertTrue(resumed.muted)
+            assertEquals(0, ExerciseSession.restore(MusicPack.questions, resumed.events).xp)
+            repository.reset(muted = true)
+            assertEquals(SavedProgress(muted = true), repository.load())
+        } finally {
+            scope.coroutineContext.job.cancelAndJoin()
+            file.delete()
+        }
         Unit
     }
 }
