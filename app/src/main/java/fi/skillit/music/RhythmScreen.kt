@@ -1,6 +1,8 @@
 package fi.skillit.music
 
 import android.os.SystemClock
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -72,11 +74,13 @@ fun RhythmScreen(audio: PlaybackController, suspended: Boolean, onBack: () -> Un
             label = { Text("${value.beats}/4") }, modifier = Modifier.heightIn(min = 48.dp))
     } }
     var dropBounds by remember { mutableStateOf(Rect.Zero) }
-    Card(Modifier.fillMaxWidth().onGloballyPositioned { dropBounds = it.boundsInRoot() }.semantics { contentDescription = "Täydennettävä tahti" }) {
+    var dragging by remember { mutableStateOf(false) }
+    Card(colors = CardDefaults.cardColors(containerColor = if (dragging) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceVariant), modifier = Modifier.fillMaxWidth().onGloballyPositioned { dropBounds = it.boundsInRoot() }.semantics { contentDescription = "Täydennettävä tahti" }) {
         Column(Modifier.padding(12.dp)) {
             Text("${meter.beats}/4 · ${beatsFi((challenge.prefix + added).sumOf { it.duration.eighths })}/${meter.beats} iskua")
-            Staff(FullBar(Bar(meter, challenge.prefix + added)))
-            Text("Alkumerkit säilyvät. Lisää puuttuvat iskut alle.")
+            RhythmStaff(Bar(meter, challenge.prefix + added))
+            Text("Alkumerkit säilyvät. Pudota merkki tähän tai lisää se painikkeella.")
+            if (added.isNotEmpty()) Text("Lisätyt: " + added.joinToString(" · ") { if (it is Rest) it.duration.restFi else it.duration.noteFi })
         }
     }
     listOf(false, true).forEach { rest ->
@@ -87,9 +91,9 @@ fun RhythmScreen(audio: PlaybackController, suspended: Boolean, onBack: () -> Un
             OutlinedButton(onClick = { add(symbol) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                 .onGloballyPositioned { origin = it.positionInRoot() }
                 .pointerInput(symbol, challenge, encoded) {
-                    detectDragGesturesAfterLongPress(onDragStart = { drag = origin + it },
+                    detectDragGesturesAfterLongPress(onDragStart = { dragging = true; drag = origin + it },
                         onDrag = { change, amount -> change.consume(); drag += amount },
-                        onDragEnd = { if (dropBounds.contains(drag)) add(symbol) }, onDragCancel = {})
+                        onDragEnd = { dragging = false; if (dropBounds.contains(drag)) add(symbol) }, onDragCancel = { dragging = false })
                 }) { Text("Lisää ${if (rest) duration.restFi else duration.noteFi} · ${beatsFi(duration.eighths)} iskua") }
         }
     }
@@ -106,7 +110,7 @@ fun RhythmScreen(audio: PlaybackController, suspended: Boolean, onBack: () -> Un
     if (feedback.isNotEmpty()) Text(feedback, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
     OutlinedButton(onClick = { stop(); if (!audio.play(MusicAudio.render(challenge.target.symbols))) feedback = "Kuuntelu ei käynnistynyt. Tarkista ääniasetukset." }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Kuuntele esimerkkirytmi") }
     Text("Esimerkkirytmi: taukojen kohdalla ei napauteta. Voit myös vain kuunnella ja lukea.")
-    Staff(FullBar(challenge.target))
+    RhythmStaff(challenge.target)
     Text(challenge.target.symbols.joinToString(" · ") { if (it is Rest) it.duration.restFi else it.duration.noteFi })
     Button(onClick = { stop(); timing = true }, enabled = !timing && !suspended, modifier = Modifier.heightIn(min = 56.dp)) { Text("Kokeile mukana naputtelua") }
     if (timing) {
@@ -116,4 +120,13 @@ fun RhythmScreen(audio: PlaybackController, suspended: Boolean, onBack: () -> Un
     OutlinedButton(onClick = { stop(); feedback = "Pysäytetty. Voit aloittaa uudelleen." }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Pysäytä harjoitus") }
     OutlinedButton(onClick = { stop(); seed = if (seed == Int.MAX_VALUE) 0 else seed + 1; encoded = emptyList(); feedback = "" }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Uusi rytmi") }
     TextButton(onClick = { stop(); onBack() }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Takaisin kartalle") }
+}
+
+/** Keep dense and deliberately overfilled bars readable without changing M1 notation. */
+@Composable
+private fun RhythmStaff(bar: Bar) {
+    val width = maxOf(280, 138 + bar.symbols.size * 30).dp
+    Box(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+        Staff(FullBar(bar), Modifier.width(width))
+    }
 }

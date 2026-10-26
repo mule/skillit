@@ -99,12 +99,14 @@ class M2GameplayTest {
         tap("Etusivu"); tap("Jatka saarelle 2")
         visible("Sävelsalapoliisi")
     }
-    @Test fun tabletCanDragTheSameSymbolThatButtonsAdd() {
+    @Test fun childCanDragTheSameSymbolThatButtonsAdd() {
         tap("Rytmipaja")
         val source = compose.onNodeWithText("Lisää puolinuotti · 2 iskua")
         source.performScrollTo()
         val target = compose.onNodeWithContentDescription("Täydennettävä tahti")
-        val destination = target.fetchSemanticsNode().boundsInRoot.center
+        val targetBounds = target.fetchSemanticsNode().boundsInRoot
+        // Drop into the visible lower edge when large text puts the card's centre above the viewport.
+        val destination = androidx.compose.ui.geometry.Offset(targetBounds.center.x, targetBounds.bottom - 20)
         val origin = source.fetchSemanticsNode().boundsInRoot.topLeft
         source.performTouchInput {
             down(center); advanceEventTime(700); moveTo(destination - origin, 500); up()

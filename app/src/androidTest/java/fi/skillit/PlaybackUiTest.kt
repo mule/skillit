@@ -46,6 +46,11 @@ class PlaybackUiTest {
         }
         tap("Asetukset")
         compose.runOnIdle { assertFalse(output.active) }
+        compose.onNodeWithContentDescription("Äänenvoimakkuus").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.SetProgress) { it(.3f) }
+        compose.waitUntil(10000) { runBlocking { kotlin.math.abs(repo.load().volume - .3f) < .001f } }
+        tap("Sulje"); hear()
+        compose.runOnIdle { assertEquals(.3f, output.volume, .001f) }
+        tap("Asetukset")
         compose.onNodeWithContentDescription("Äänet mykistetty").performClick()
         tap("Sulje"); hear()
         compose.runOnIdle { assertFalse(output.active) }

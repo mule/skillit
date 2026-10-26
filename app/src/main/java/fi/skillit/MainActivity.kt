@@ -88,7 +88,10 @@ fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null) {
         scope.launch {
             try { repository.save(value); progress = value; error = null; after() }
             catch (e: CancellationException) { throw e }
-            catch (_: Exception) { error = "Tallennus epäonnistui. Yritä uudelleen. Edellinen tilanne on yhä tallessa." }
+            catch (_: Exception) {
+                progress?.let { audio.configure(it.muted, it.volume) }
+                error = "Tallennus epäonnistui. Yritä uudelleen. Edellinen tilanne on yhä tallessa."
+            }
             finally { busy = false }
         }
     }
@@ -205,17 +208,17 @@ fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null) {
         }
     }
     if (settings) AlertDialog(onDismissRequest = { settings = false }, title = { Text("Asetukset") }, text = {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Äänet mykistetty", Modifier.weight(1f))
                 Switch(checked = progress?.muted ?: false, enabled = progress != null && !busy,
-                    onCheckedChange = { muted -> audio.stop(); progress?.let { save(it.copy(muted = muted)) } },
+                    onCheckedChange = { muted -> progress?.let { audio.configure(muted, it.volume); save(it.copy(muted = muted)) } },
                     modifier = Modifier.semantics { contentDescription = "Äänet mykistetty" })
             }
             var volume by remember(progress?.volume) { mutableStateOf(progress?.volume ?: .6f) }
             Text("Äänenvoimakkuus ${(volume * 100).toInt()} %")
             Slider(value = volume, onValueChange = { value -> audio.stop(); volume = value },
-                onValueChangeFinished = { progress?.let { save(it.copy(volume = volume)) } },
+                onValueChangeFinished = { progress?.let { audio.configure(it.muted, volume); save(it.copy(volume = volume)) } },
                 steps = 9, enabled = progress != null && !busy,
                 modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Äänenvoimakkuus" })
             TextButton(onClick = { settings = false; confirmReset = true }, enabled = !busy) { Text("Nollaa edistyminen") }
