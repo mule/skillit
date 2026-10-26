@@ -126,9 +126,9 @@ fun SkillitApp(repository: ProgressRepository) {
                         val attempt = session.current!!
                         val question = attempt.question
                         Text(MusicPack.levels[question.level], style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
-                        Text("Taso ${question.level + 1}/4 · ${session.answeredOriginals}/20 tehtävää · ${session.xp} XP")
-                        LinearProgressIndicator(progress = { session.answeredOriginals / 20f }, modifier = Modifier.fillMaxWidth().semantics {
-                            contentDescription = "Edistyminen, ${session.answeredOriginals} tehtävää kahdestakymmenestä"
+                        Text("Taso ${question.level + 1}/4 · ${session.resolvedCount}/20 ratkaistu · ${session.xp} XP")
+                        LinearProgressIndicator(progress = { session.resolvedCount / 20f }, modifier = Modifier.fillMaxWidth().semantics {
+                            contentDescription = "Edistyminen, ${session.resolvedCount} ratkaistua tehtävää kahdestakymmenestä"
                         })
                         if (attempt.retry) Text("Uusi yritys · voit saada 5 XP")
                         Text(question.prompt, style = MaterialTheme.typography.titleLarge)
@@ -146,11 +146,11 @@ fun SkillitApp(repository: ProgressRepository) {
                             if (session.hintVisible) Text(question.hint, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
                         } else {
                             Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(if (feedback.correct) "Hienoa! +${feedback.xp} XP" else if (attempt.retry) "Hyvä harjoitus! Jatketaan matkaa." else "Harjoitellaan vielä. Saat uuden yrityksen tason lopussa.",
+                                Text(if (feedback.correct) "Hienoa! +${feedback.xp} XP" else if (attempt.retry) "Harjoitellaan vielä. Voit yrittää uudelleen." else "Harjoitellaan vielä. Saat uuden yrityksen tason lopussa.",
                                     style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
                                 Text(question.explanation)
                             } }
-                            Button(onClick = { act { it.next(attempt.token) } }, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Jatka") }
+                            Button(onClick = { act { it.next(attempt.token) } }, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text(if (!feedback.correct && attempt.retry) "Yritä uudelleen" else "Jatka") }
                         }
                         TextButton(onClick = { inGame = false }, enabled = !busy, modifier = Modifier.heightIn(min = 48.dp)) { Text("Etusivu") }
                     }

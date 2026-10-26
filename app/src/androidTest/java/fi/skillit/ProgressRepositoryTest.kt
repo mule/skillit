@@ -105,4 +105,49 @@ class ProgressRepositoryTest {
         }
         Unit
     }
+    @Test fun longRepeatedReviewSurvivesDataStoreReopenAndEventuallyCompletesForFiveXp() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val file = File(context.cacheDir, "many-retries-${System.nanoTime()}.preferences_pb")
+        var scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        var store = PreferenceDataStoreFactory.create(scope = scope) { file }
+        var repository = ProgressRepository(store)
+        try {
+            val session = ExerciseSession(MusicPack.questions)
+            repeat(1000) {
+                val attempt = session.current!!
+                session.showHint(attempt.token)
+                session.answer(attempt.token, attempt.question.choices.first { it.id != attempt.question.correctId }.id)
+                session.next(attempt.token)
+            }
+            assertEquals("m1:200", session.current!!.token)
+            assertFalse(session.complete)
+            assertEquals(0, session.resolvedCount)
+            repository.save(SavedProgress(started = true, muted = true, events = session.events))
+            assertTrue(store.data.first()[ProgressRepository.key]!!.length > 100_000)
+            scope.coroutineContext.job.cancelAndJoin()
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            store = PreferenceDataStoreFactory.create(scope = scope) { file }
+            repository = ProgressRepository(store)
+            val saved = repository.load()
+            val restored = ExerciseSession.restore(MusicPack.questions, saved.events)
+            assertTrue(saved.muted)
+            assertEquals("m1:200", restored.current!!.token)
+            assertEquals(0, restored.xp)
+            assertFalse(restored.answer("m1:199", restored.current!!.question.correctId))
+            while (!restored.complete) {
+                val attempt = restored.current!!
+                restored.answer(attempt.token, attempt.question.correctId)
+                assertEquals(if (attempt.retry) 5 else 10, restored.feedback!!.xp)
+                restored.next(attempt.token)
+            }
+            assertEquals(175, restored.xp)
+            assertEquals(5, restored.retryCount)
+            repository.save(saved.copy(events = restored.events))
+            assertTrue(ExerciseSession.restore(MusicPack.questions, repository.load().events).complete)
+        } finally {
+            scope.coroutineContext.job.cancelAndJoin()
+            file.delete()
+        }
+        Unit
+    }
 }

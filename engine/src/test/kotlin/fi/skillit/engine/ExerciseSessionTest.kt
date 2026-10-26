@@ -21,7 +21,7 @@ class ExerciseSessionTest {
         assertEquals(20, session.firstTryCorrect)
         assertNull(session.current)
     }
-    @Test fun missedQuestionsReturnAfterTheLevelForFiveXpAndNeverLoop() {
+    @Test fun missedQuestionsStayInTheirLevelUntilCorrectAndAlwaysAwardFiveXp() {
         val session = ExerciseSession(questions)
         val first = session.current!!.token
         session.answer(first, "no")
@@ -45,9 +45,17 @@ class ExerciseSessionTest {
             allMissed.next(token)
             attempts++
         }
-        assertTrue(allMissed.complete)
-        assertEquals(40, attempts)
+        assertFalse(allMissed.complete)
+        assertEquals(50, attempts)
         assertEquals(0, allMissed.xp)
+        assertEquals(0, allMissed.current!!.question.level)
+        while (!allMissed.complete) {
+            val attempt = allMissed.current!!
+            allMissed.answer(attempt.token, "yes")
+            allMissed.next(attempt.token)
+        }
+        assertEquals(175, allMissed.xp)
+        assertEquals(5, allMissed.retryCount)
     }
     @Test fun hintsAndFeedbackReplayWithoutDuplicateAwardsOrStaleTaps() {
         val session = ExerciseSession(questions)
@@ -106,5 +114,32 @@ class ExerciseSessionTest {
         assertThrows(IllegalArgumentException::class.java) {
             ExerciseSession(listOf(questions.first().copy(correctId = "missing")))
         }
+    }
+    @Test fun repeatedMissesRemainRetryableAcrossEveryRestoreUntilCorrect() {
+        var session = ExerciseSession(questions.take(1))
+        repeat(80) { number ->
+            val token = "q1:$number"
+            assertEquals(token, session.current!!.token)
+            assertTrue(session.showHint(token))
+            assertTrue(session.answer(token, "no"))
+            assertFalse(session.answer(token, "yes"))
+            assertEquals(0, session.xp)
+            session = ExerciseSession.restore(questions.take(1), session.events)
+            assertTrue(session.next(token))
+            session = ExerciseSession.restore(questions.take(1), session.events)
+            assertFalse(session.complete)
+            assertEquals(0, session.resolvedCount)
+            assertFalse(session.answer(token, "yes"))
+        }
+        assertEquals("q1:80", session.current!!.token)
+        assertTrue(session.answer("q1:80", "yes"))
+        assertEquals(5, session.xp)
+        assertEquals(1, session.resolvedCount)
+        assertEquals(1, session.retryCount)
+        session.next("q1:80")
+        val restored = ExerciseSession.restore(questions.take(1), session.events)
+        assertTrue(restored.complete)
+        assertEquals(5, restored.xp)
+        assertFalse(restored.answer("q1:80", "yes"))
     }
 }

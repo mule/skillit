@@ -42,6 +42,16 @@ class GameplayTest {
             val q = item.question
             if (i == 5) {
                 visible("Uusi yritys · voit saada 5 XP")
+                tap("puolinuotti")
+                visible("Harjoitellaan vielä. Voit yrittää uudelleen.")
+                visible("Tämä on neljäsosanuotti. Sen kesto on 1 isku.")
+                compose.onNodeWithText("Seikkailu valmis!").assertDoesNotExist()
+                compose.activityRule.scenario.recreate()
+                visible("Harjoitellaan vielä. Voit yrittää uudelleen.")
+                tap("Yritä uudelleen")
+                visible("Uusi yritys · voit saada 5 XP")
+                tap("Vihje")
+                visible("Musta nuotinpää ja varsi, ei lippua.")
                 tap("neljäsosanuotti")
                 visible("Hienoa! +5 XP")
                 tap("Jatka")

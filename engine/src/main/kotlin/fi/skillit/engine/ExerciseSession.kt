@@ -10,8 +10,10 @@ data class Question(
     val hint: String,
     val explanation: String,
 )
-data class Attempt(val question: Question, val retry: Boolean = false) {
-    val token: String get() = "${question.id}:${if (retry) 1 else 0}"
+data class Attempt(val question: Question, val number: Int = 0) {
+    init { require(number >= 0) }
+    val retry: Boolean get() = number > 0
+    val token: String get() = "${question.id}:$number"
 }
 data class Feedback(val correct: Boolean, val xp: Int, val choiceId: String)
 data class Result(val questionId: String, val retry: Boolean, val correct: Boolean, val xp: Int)
@@ -36,7 +38,8 @@ class ExerciseSession(val questions: List<Question>) {
     var hintVisible: Boolean = false
         private set
     val answeredOriginals: Int get() = results.count { !it.retry }
-    val retryCount: Int get() = results.count { it.retry }
+    val retryCount: Int get() = results.filter { it.retry }.map { it.questionId }.distinct().size
+    val resolvedCount: Int get() = results.count { it.correct }
     val outcomes: List<Result> get() = results.toList()
     private val pending = questions.map { Attempt(it) }.toMutableList()
     private val results = mutableListOf<Result>()
@@ -62,9 +65,9 @@ class ExerciseSession(val questions: List<Question>) {
         if (current?.token != token || feedback == null) return false
         history += SessionEvent(Action.NEXT, token)
         val attempt = pending.removeAt(0)
-        if (feedback?.correct == false && !attempt.retry) {
+        if (feedback?.correct == false) {
             val afterLevel = pending.indexOfLast { it.question.level == attempt.question.level } + 1
-            pending.add(afterLevel, Attempt(attempt.question, retry = true))
+            pending.add(afterLevel, Attempt(attempt.question, number = attempt.number + 1))
         }
         feedback = null
         hintVisible = false
@@ -80,7 +83,6 @@ class ExerciseSession(val questions: List<Question>) {
 
     companion object {
         fun restore(questions: List<Question>, events: List<SessionEvent>): ExerciseSession {
-            require(events.size <= questions.size * 6) { "Too many session events" }
             return ExerciseSession(questions).also { session ->
                 events.forEach { event ->
                     val accepted = when (event.action) {

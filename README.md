@@ -35,8 +35,16 @@ branch is pushed. A local pass does not establish a GitHub Actions pass.
 
 - Complete all 20 questions in airplane mode; see all four Finnish level names.
 - First-try correct: 10 XP; correct retry: 5 XP. Hints do not reduce XP.
-- Wrong answers are retried after the original questions in the same level.
-  A second miss reveals the explanation and moves on with 0 XP; no endless loop.
+- Every miss earns 0 XP and queues the question for review at the end of the same
+  level. Repeated misses keep the question unresolved. The child chooses
+  “Yritä uudelleen”, can use the free hint, and earns 5 XP on any later correct
+  answer. There is no fixed attempt limit or automatic completion after a miss.
+- Progress counts correctly resolved questions. A level and the final summary
+  require every question to be answered correctly. Reviewing the same question
+  several times counts as one reviewed question in the summary.
+- Choices keep a deterministic order; every new attempt has a distinct token so
+  stale taps cannot answer the next attempt. New games reset session XP only
+  after explicit confirmation. Whole rests are excluded from authored 2/4 tasks.
 - Tap an answer twice and rotate during feedback: no duplicate award.
 - Kill and reopen the process during a question, hint, feedback and retry;
   verify question, XP and retry state survive. Finish, reopen and verify summary.
@@ -50,14 +58,24 @@ branch is pushed. A local pass does not establish a GitHub Actions pass.
 
 ## M1 verification checkpoint (2026-10-26)
 
-Local verification: debug APK build, lint and 8 JVM tests pass. The 7-test Android
-instrumentation suite and a focused eighth storage-version regression test pass. The device suite passed on an API 35 emulator in airplane mode at
-360 dp portrait / 640 dp landscape with 150% font size. It covers a complete
-20-question session, wrong/retry feedback, hints, 195-XP mixed scoring, activity
-recreation, completion/reset/mute, accessible choice targets, position semantics,
-DataStore reopening and explicit recovery from corrupt session/protobuf data.
-A separate force-stop/cold-start check restored +10-XP feedback and reached the
-next question. APK signature verification passed; APK permissions have no Internet.
+Local verification: debug APK build, lint, 9 JVM tests and the full 9-test Android
+instrumentation suite pass on an API 35 emulator in airplane mode. All four
+gameplay tests also pass at 360 dp portrait / 640 dp landscape with 150% text size.
+Coverage includes a complete 20-question session, repeated misses, user-controlled
+retry, free hints, 195-XP mixed scoring, activity recreation, completion/reset/mute,
+accessible choice targets, position semantics, version/identity rejection and
+explicit recovery from corrupt session/protobuf data.
+
+The storage test persists and reopens a save larger than 100 KB after 1,000
+misses, preserves unresolved questions, and eventually completes with the correct
+5-XP review awards. Engine tests replay after each of 80 consecutive misses and
+reject stale attempts. Action-history storage grows with attempts; no fixed
+attempt limit is imposed. Performance beyond this fixture has not been measured.
+
+A separate force-stop/cold-start check restored second-miss feedback unchanged.
+The child then chose a third attempt, used a free hint and earned 5 XP; the next
+level remained unavailable until the correct answer. APK signature verification
+passed; APK permissions have no Internet.
 
 The screenshot test captures 21 notation examples at 320 dp width: all eight
 pitches, four note/rest durations, both beam directions, flags and both meters.
