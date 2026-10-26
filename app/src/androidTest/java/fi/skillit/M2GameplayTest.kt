@@ -106,14 +106,25 @@ class M2GameplayTest {
         tap("Rytmipaja")
         val source = compose.onNodeWithText("Lisää puolinuotti · 2 iskua")
         source.performScrollTo()
+        // ScrollTo aligns the palette at the top, hiding the preceding drop card.
+        // Bring both into view before making a real long-press drag.
+        compose.onRoot().performTouchInput { swipeDown(startY = height * .2f, endY = height * .6f, durationMillis = 200) }
+        compose.waitForIdle()
+        source.assertIsDisplayed()
         val target = compose.onNodeWithContentDescription("Täydennettävä tahti")
+        target.assertIsDisplayed()
         val targetBounds = target.fetchSemanticsNode().boundsInRoot
+        assertTrue(targetBounds.width > 0 && targetBounds.height > 0)
         // Drop into the visible lower edge when large text puts the card's centre above the viewport.
         val destination = androidx.compose.ui.geometry.Offset(targetBounds.center.x, targetBounds.bottom - 20)
-        val origin = source.fetchSemanticsNode().boundsInRoot.topLeft
-        source.performTouchInput {
-            down(center); advanceEventTime(700); moveTo(destination - origin, 500); up()
-        }
+        val startPoint = source.fetchSemanticsNode().boundsInRoot.center
+        capture("05-drag-before")
+        compose.onRoot().performTouchInput { down(startPoint) }
+        compose.mainClock.advanceTimeBy(800)
+        compose.onRoot().performTouchInput { moveTo(destination, 500); up() }
+        capture("06-drag-after")
+        File(compose.activity.getExternalFilesDir(null), "m2/drag.txt").writeText(
+            "start=$startPoint destination=$destination target=$targetBounds\n" + compose.onRoot().printToString())
         val beatsAfterOneDrop = beatsFi(RhythmChallenge.generate(Meter.TWO_FOUR, 0).prefix.sumOf { it.duration.eighths } + 4)
         visible("2/4 · $beatsAfterOneDrop/2 iskua")
         tap("Tarkista tahti")
