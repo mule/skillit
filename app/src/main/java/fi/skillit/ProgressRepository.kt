@@ -17,7 +17,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 val Context.skillitDataStore by preferencesDataStore(name = "skillit-progress", corruptionHandler = ProgressRepository.corruptionHandler)
-data class SavedProgress(val started: Boolean = false, val muted: Boolean = false, val events: List<SessionEvent> = emptyList())
+data class SavedProgress(val started: Boolean = false, val muted: Boolean = false, val events: List<SessionEvent> = emptyList(), val volume: Float = .6f)
 
 class ProgressRepository(private val dataStore: DataStore<Preferences>) {
     suspend fun load(): SavedProgress {
@@ -32,10 +32,13 @@ class ProgressRepository(private val dataStore: DataStore<Preferences>) {
         ExerciseSession.restore(MusicPack.questions, events)
         val started = json.getBoolean("started")
         require(started || events.isEmpty())
-        return SavedProgress(started, json.getBoolean("muted"), events)
+        val volume = if (json.has("volume")) json.getDouble("volume").toFloat() else .6f
+        require(volume.isFinite() && volume in 0f..1f)
+        return SavedProgress(started, json.getBoolean("muted"), events, volume)
     }
 
     suspend fun save(progress: SavedProgress) {
+        require(progress.volume.isFinite() && progress.volume in 0f..1f)
         ExerciseSession.restore(MusicPack.questions, progress.events)
         require(progress.started || progress.events.isEmpty())
         val events = JSONArray().apply {
@@ -45,7 +48,7 @@ class ProgressRepository(private val dataStore: DataStore<Preferences>) {
         }
         val raw = JSONObject().apply {
             put("schema", 1); put("pack", MusicPack.id); put("version", MusicPack.version)
-            put("started", progress.started); put("muted", progress.muted); put("events", events)
+            put("volume", progress.volume.toDouble()); put("started", progress.started); put("muted", progress.muted); put("events", events)
         }.toString()
         dataStore.edit { it[key] = raw }
     }
