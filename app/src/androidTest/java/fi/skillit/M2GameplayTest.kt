@@ -22,7 +22,10 @@ class M2GameplayTest {
         await("Aloita seikkailu")
     }
     private fun await(text: String) { compose.waitUntilAtLeastOneExists(hasText(text), 10000) }
-    private fun tap(text: String) { await(text); compose.onNodeWithText(text).performScrollTo().performClick() }
+    private fun tap(text: String) {
+        compose.waitUntilAtLeastOneExists(hasText(text) and isEnabled(), 10_000)
+        compose.onNodeWithText(text).performScrollTo().performClick()
+    }
     private fun visible(text: String) { await(text); compose.onNodeWithText(text).performScrollTo().assertIsDisplayed() }
     private fun capture(name: String) {
         val dir = File(compose.activity.getExternalFilesDir(null), "m2").apply { mkdirs() }

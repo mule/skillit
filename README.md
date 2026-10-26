@@ -97,7 +97,10 @@ choice, hint, feedback, retry queue, mute and computed XP. Earned islands are de
 from accepted correct answers, including completed v1 saves. Practice event logs
 are stored separately per island; volume defaults to 60% for a v1 save. Invalid
 history, unknown schemas and corrupt bytes show explicit recovery instead of a
-silent reset. Reset clears adventure and practice with confirmation while keeping
+silent reset. M1 cannot read an upgraded schema-2 save: downgrading the APK is not
+supported and would show M1's recovery screen. A malformed schema-2 practice log
+also requests explicit recovery; no partial history is silently discarded.
+Reset clears adventure and practice with confirmation while keeping
 current sound preferences. A force-stopped practice round can be resumed from its
 island on the map; the original adventure resumes by default on a cold launch.
 

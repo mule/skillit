@@ -112,10 +112,11 @@ fun RhythmScreen(audio: PlaybackController, suspended: Boolean, onBack: () -> Un
     Text("Esimerkkirytmi: taukojen kohdalla ei napauteta. Voit myös vain kuunnella ja lukea.")
     RhythmStaff(challenge.target)
     Text(challenge.target.symbols.joinToString(" · ") { if (it is Rest) it.duration.restFi else it.duration.noteFi })
-    Button(onClick = { stop(); timing = true }, enabled = !timing && !suspended, modifier = Modifier.heightIn(min = 56.dp)) { Text("Kokeile mukana naputtelua") }
-    if (timing) {
-        Text(pulse)
-        Button(onClick = { taps.tap(SystemClock.elapsedRealtime()) }, modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp)) { Text("Napauta") }
+    Text(if (timing) pulse.ifEmpty { "Valmistaudu…" } else " ")
+    Button(onClick = {
+        if (timing) taps.tap(SystemClock.elapsedRealtime()) else { stop(); timing = true }
+    }, enabled = !suspended, modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp)) {
+        Text(if (timing) "Napauta" else "Kokeile mukana naputtelua")
     }
     OutlinedButton(onClick = { stop(); feedback = "Pysäytetty. Voit aloittaa uudelleen." }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Pysäytä harjoitus") }
     OutlinedButton(onClick = { stop(); seed = if (seed == Int.MAX_VALUE) 0 else seed + 1; encoded = emptyList(); feedback = "" }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Uusi rytmi") }

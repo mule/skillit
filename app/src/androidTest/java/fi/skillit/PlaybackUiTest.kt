@@ -29,7 +29,7 @@ class PlaybackUiTest {
         runBlocking { repo.reset(false) }
         compose.runOnUiThread { compose.activity.setContent { SkillitTheme { SkillitApp(repo, output) } } }
         fun tap(text: String) {
-            compose.waitUntilAtLeastOneExists(hasText(text),10000)
+            compose.waitUntilAtLeastOneExists(hasText(text) and isEnabled(),10000)
             if (text == "Sulje") compose.onNodeWithText(text).performClick()
             else compose.onNodeWithText(text).performScrollTo().performClick()
         }
