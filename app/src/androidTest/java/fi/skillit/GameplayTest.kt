@@ -4,6 +4,8 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import fi.skillit.music.MusicPack
 import kotlinx.coroutines.runBlocking
+import androidx.compose.ui.unit.dp
+import fi.skillit.music.notationDescription
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -87,5 +89,16 @@ class GameplayTest {
         tap("Aloita alusta")
         compose.onNodeWithText("Nollaa").performClick()
         visible("Aloita seikkailu")
+    }
+    @Test fun notationHasPositionSemanticsAndChoicesHaveLargeTapTargets() {
+        tap("Aloita seikkailu")
+        val item = MusicPack.items.first()
+        compose.onNodeWithContentDescription(notationDescription(item.task)).assertExists()
+        item.question.choices.forEach { choice ->
+            val node = compose.onNodeWithText(choice.label)
+            node.assertHasClickAction()
+            node.assertHeightIsAtLeast(48.dp)
+        }
+        compose.onNodeWithText("Vihje").assertHeightIsAtLeast(48.dp)
     }
 }

@@ -1,6 +1,8 @@
 package fi.skillit
 
 import android.content.Context
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
+import androidx.datastore.preferences.core.preferencesOf
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -14,7 +16,7 @@ import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
 
-val Context.skillitDataStore by preferencesDataStore(name = "skillit-progress")
+val Context.skillitDataStore by preferencesDataStore(name = "skillit-progress", corruptionHandler = ProgressRepository.corruptionHandler)
 data class SavedProgress(val started: Boolean = false, val muted: Boolean = false, val events: List<SessionEvent> = emptyList())
 
 class ProgressRepository(private val dataStore: DataStore<Preferences>) {
@@ -52,5 +54,9 @@ class ProgressRepository(private val dataStore: DataStore<Preferences>) {
 
     suspend fun reset(muted: Boolean) = save(SavedProgress(muted = muted))
 
-    companion object { val key = stringPreferencesKey("session-v1") }
+    companion object {
+        val key = stringPreferencesKey("session-v1")
+        // Keep a visible recovery state; never silently turn unreadable progress into a new game.
+        val corruptionHandler = ReplaceFileCorruptionHandler<Preferences> { preferencesOf(key to "corrupt") }
+    }
 }

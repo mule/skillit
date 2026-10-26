@@ -47,4 +47,22 @@ class ProgressRepositoryTest {
         file.delete()
         Unit
     }
+    @Test fun corruptDataStoreBytesCanBeExplicitlyReset() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val file = File(context.cacheDir, "corrupt-${System.nanoTime()}.preferences_pb")
+        file.writeBytes(byteArrayOf(0x0f, 0x7f, 0x7f))
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val repository = ProgressRepository(PreferenceDataStoreFactory.create(
+            scope = scope, corruptionHandler = ProgressRepository.corruptionHandler,
+        ) { file })
+        try {
+            repository.load()
+            fail("Corruption must be surfaced to the child before reset")
+        } catch (_: org.json.JSONException) { /* UI presents recovery. */ }
+        repository.reset(muted = false)
+        assertEquals(SavedProgress(), repository.load())
+        scope.coroutineContext.job.cancelAndJoin()
+        file.delete()
+        Unit
+    }
 }
