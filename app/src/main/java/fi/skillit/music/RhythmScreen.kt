@@ -37,6 +37,7 @@ fun RhythmScreen(audio: PlaybackController, suspended: Boolean, onBack: () -> Un
         if (code.first() == 'n') Note(Pitch.C4, duration) else Rest(duration)
     }
     val taps = remember(challenge) { TapSession(challenge.target) }
+    val playbackUnavailable = "Kuuntelu ei käynnistynyt. Tarkista ääniasetukset."
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     fun stop() { timing = false; taps.cancel(); audio.stop(); pulse = "" }
     DisposableEffect(lifecycle, taps) {
@@ -47,13 +48,13 @@ fun RhythmScreen(audio: PlaybackController, suspended: Boolean, onBack: () -> Un
     LaunchedEffect(suspended) { if (suspended) stop() }
     LaunchedEffect(timing) {
         if (timing) {
-            for (count in 3 downTo 1) { pulse = "Valmistaudu: $count"; delay(600) }
+            for (count in 3 downTo 1) { pulse = "Valmistaudu: $count"; delay(60_000L / taps.bpm) }
             val start = SystemClock.elapsedRealtime()
             taps.start(start)
             audio.play(MusicAudio.render(challenge.target.symbols))
             while (SystemClock.elapsedRealtime() - start < taps.durationMs) {
                 val elapsed = SystemClock.elapsedRealtime() - start
-                pulse = "Isku ${elapsed / 600 + 1}/${meter.beats}"
+                pulse = "Isku ${elapsed * taps.bpm / 60_000 + 1}/${meter.beats}"
                 delay(30)
             }
             val result = taps.finish()
@@ -101,14 +102,16 @@ fun RhythmScreen(audio: PlaybackController, suspended: Boolean, onBack: () -> Un
     Button(onClick = {
         stop()
         feedback = when (challenge.evaluate(added)) {
-            FillResult.CORRECT -> "Hienoa! Tahti on täynnä. Kuuntele oma rytmisi."
+            FillResult.CORRECT -> {
+                val played = audio.play(MusicAudio.render(challenge.prefix + added))
+                "Hienoa! Tahti on täynnä. " + if (played) "Kuuntele oma rytmisi." else playbackUnavailable
+            }
             FillResult.UNDERFILLED -> "Tahtiin mahtuu vielä. Lisää nuotti tai tauko."
             FillResult.OVERFLOW -> "Tahti on liian pitkä. Poista merkki ja kokeile uudelleen."
         }
-        if (challenge.evaluate(added) == FillResult.CORRECT) audio.play(MusicAudio.render(challenge.prefix + added))
     }, modifier = Modifier.heightIn(min = 56.dp)) { Text("Tarkista tahti") }
     if (feedback.isNotEmpty()) Text(feedback, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-    OutlinedButton(onClick = { stop(); if (!audio.play(MusicAudio.render(challenge.target.symbols))) feedback = "Kuuntelu ei käynnistynyt. Tarkista ääniasetukset." }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Kuuntele esimerkkirytmi") }
+    OutlinedButton(onClick = { stop(); if (!audio.play(MusicAudio.render(challenge.target.symbols))) feedback = playbackUnavailable }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Kuuntele esimerkkirytmi") }
     Text("Esimerkkirytmi: taukojen kohdalla ei napauteta. Voit myös vain kuunnella ja lukea.")
     RhythmStaff(challenge.target)
     Text(challenge.target.symbols.joinToString(" · ") { if (it is Rest) it.duration.restFi else it.duration.noteFi })

@@ -69,7 +69,15 @@ progress or points. Completed islands remain available for practice. Each island
 has its own resumable practice round with **separate practice XP** (10/5/0, free
 hints and unlimited same-level retries). Starting a new practice round replaces
 that island's practice result; it does not add to the original adventure total.
-The original 20-question result and answer identities remain unchanged.
+The original 20-question result and answer identities remain unchanged. Map actions
+say “Harjoittele” for a run with no answers, “Jatka” for unfinished practice and
+“Katso … harjoitustulos” for a completed run. The brief badge animation runs on each
+map appearance, including recreation; badge ownership comes from saved history.
+
+System Back returns adventure, practice and rhythm to the map, stopping playback
+and cancelling timing. Dialog Back dismisses the dialog; Back on the map retains
+the platform exit behavior. Failed sound-setting saves restore the displayed value
+and controller to the persisted preference, including repeated failures.
 
 Sävelpaja plays C4–D4–E4–F4–G4–A4–H4–C5 and 2/4 or 4/4 pulse examples.
 One owned playback controller sends finite synthesized mono PCM16 at 24 kHz to

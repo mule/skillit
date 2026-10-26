@@ -15,9 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import fi.skillit.engine.ExerciseSession
+import fi.skillit.engine.SessionEvent
 
 @Composable
-fun IslandMap(adventure: ExerciseSession, practiceLevels: Set<Int>, busy: Boolean, open: (Int, Boolean) -> Unit) {
+fun IslandMap(adventure: ExerciseSession, practice: Map<Int, List<SessionEvent>>, busy: Boolean, open: (Int, Boolean) -> Unit) {
     val islands = Adventure.islands(adventure)
     var revealed by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { revealed = true }
@@ -53,8 +54,15 @@ fun IslandMap(adventure: ExerciseSession, practiceLevels: Set<Int>, busy: Boolea
             if (state == IslandState.CURRENT) OutlinedButton(onClick = { open(i, false) }, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
                 Text("Jatka saarelle ${i + 1}")
             }
-            if (state == IslandState.COMPLETED) Button(onClick = { open(i, true) }, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
-                Text(if (i in practiceLevels) "Jatka saaren ${i + 1} harjoitusta" else "Harjoittele saarta ${i + 1}")
+            if (state == IslandState.COMPLETED) {
+                val run = remember(practice[i]) { practice[i]?.let { ExerciseSession.restore(Adventure.questions(i), it) } }
+                Button(onClick = { open(i, true) }, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+                    Text(when {
+                        run?.complete == true -> "Katso saaren ${i + 1} harjoitustulos"
+                        run?.outcomes?.isNotEmpty() == true -> "Jatka saaren ${i + 1} harjoitusta"
+                        else -> "Harjoittele saarta ${i + 1}"
+                    })
+                }
             }
         } }
     }

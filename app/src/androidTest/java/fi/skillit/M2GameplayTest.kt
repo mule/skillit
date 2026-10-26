@@ -43,6 +43,9 @@ class M2GameplayTest {
         capture("01-earned-island")
         tap("Harjoittele saarta 1")
         visible("Harjoituskierros · erilliset harjoitus-XP")
+        tap("Vihje"); tap("Etusivu")
+        visible("Harjoittele saarta 1") // A hint-only run still has no answered questions.
+        tap("Harjoittele saarta 1")
         tap("puolinuotti"); tap("Jatka")
         compose.activityRule.scenario.recreate()
         visible("Kuinka monta iskua nuotti kestää?")
@@ -58,7 +61,12 @@ class M2GameplayTest {
         visible("45 harjoitus-XP")
         capture("02-practice-reward")
         assertEquals(session.events, runBlocking { repo.load() }.events)
-        tap("Etusivu"); tap("Jatka seikkailua")
+        tap("Etusivu"); visible("Katso saaren 1 harjoitustulos")
+        tap("Katso saaren 1 harjoitustulos"); visible("45 harjoitus-XP")
+        tap("Uusi harjoituskierros"); tap("Etusivu")
+        visible("Harjoittele saarta 1")
+        assertEquals(session.events, runBlocking { repo.load() }.events)
+        tap("Jatka seikkailua")
         visible("Sävelsalapoliisi")
     }
     @Test fun rhythmButtonsHandleUnderfillOverflowCorrectAndRecreation() {

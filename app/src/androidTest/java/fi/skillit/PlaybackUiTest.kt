@@ -18,8 +18,9 @@ class PlaybackUiTest {
             var samples = shortArrayOf()
             var active = false
             var volume = 0f
+            var finished: () -> Unit = {}
             override fun start(samples: ShortArray, sampleRate: Int, volume: Float, onFinished: () -> Unit) {
-                this.samples = samples; this.volume = volume; active = true
+                this.samples = samples; this.volume = volume; active = true; finished = onFinished
                 assertEquals(24000, sampleRate)
             }
             override fun stop() { active = false }
@@ -44,6 +45,10 @@ class PlaybackUiTest {
             assertArrayEquals(MusicAudio.render(listOf(Note(Pitch.A4, Duration.QUARTER))), output.samples)
             assertEquals(.6f, output.volume)
         }
+        compose.runOnIdle { output.active = false; output.finished() }
+        compose.waitUntilAtLeastOneExists(hasText("Kuuntelu valmis."),10000)
+        hear()
+        compose.runOnIdle { assertTrue(output.active) }
         tap("Asetukset")
         compose.runOnIdle { assertFalse(output.active) }
         compose.onNodeWithContentDescription("Äänenvoimakkuus").performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.SetProgress) { it(.3f) }

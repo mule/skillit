@@ -1,5 +1,7 @@
 package fi.skillit.music
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlin.math.PI
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -47,8 +49,11 @@ interface PcmOutput {
 }
 
 class PlaybackController(private val output: PcmOutput) : AutoCloseable {
-    var playing: Boolean = false
-        private set
+    private val mutablePlaying = MutableStateFlow(false)
+    val playingState = mutablePlaying.asStateFlow()
+    var playing: Boolean
+        get() = mutablePlaying.value
+        private set(value) { mutablePlaying.value = value }
     var failure: Boolean = false
         private set
     private var muted = false

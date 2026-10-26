@@ -9,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -54,6 +55,7 @@ fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null) {
     var progress by remember { mutableStateOf<SavedProgress?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
+    var failedSaveRevision by remember { mutableStateOf(0) }
     var inGame by rememberSaveable { mutableStateOf(true) }
     var practiceLevel by rememberSaveable { mutableStateOf(-1) }
     var rhythm by rememberSaveable { mutableStateOf(false) }
@@ -90,6 +92,7 @@ fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null) {
             catch (e: CancellationException) { throw e }
             catch (_: Exception) {
                 progress?.let { audio.configure(it.muted, it.volume) }
+                failedSaveRevision++
                 error = "Tallennus epäonnistui. Yritä uudelleen. Edellinen tilanne on yhä tallessa."
             }
             finally { busy = false }
@@ -102,6 +105,18 @@ fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null) {
             else ExerciseSession.restore(Adventure.questions(practiceLevel), saved.practice[practiceLevel].orEmpty())
         if (action(updated)) save(if (practiceLevel < 0) saved.copy(events = updated.events)
             else saved.copy(practice = saved.practice + (practiceLevel to updated.events)))
+    }
+    BackHandler(enabled = settings || confirmReset ||
+        (progress != null && (rhythm || (inGame && progress?.started == true)))) {
+        when {
+            confirmReset -> confirmReset = false
+            settings -> settings = false
+            else -> {
+                audio.stop()
+                rhythm = false
+                inGame = false
+            }
+        }
     }
     LaunchedEffect(repository) { load() }
     Surface(Modifier.fillMaxSize()) {
@@ -129,7 +144,7 @@ fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null) {
                     !saved.started || !inGame -> {
                         Text("Nuottiseikkailu", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.semantics { heading() })
                         Text("Tutki säveliä ja rytmejä omaan tahtiisi. Ei kiirettä!")
-                        if (adventure != null) IslandMap(adventure, saved.practice.keys, busy) { level, practice ->
+                        if (adventure != null) IslandMap(adventure, saved.practice, busy) { level, practice ->
                             if (!practice) {
                                 val continued = ExerciseSession.restore(MusicPack.questions, saved.events)
                                 continued.current?.let { attempt ->
@@ -215,7 +230,7 @@ fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null) {
                     onCheckedChange = { muted -> progress?.let { audio.configure(muted, it.volume); save(it.copy(muted = muted)) } },
                     modifier = Modifier.semantics { contentDescription = "Äänet mykistetty" })
             }
-            var volume by remember(progress?.volume) { mutableStateOf(progress?.volume ?: .6f) }
+            var volume by remember(progress?.volume, failedSaveRevision) { mutableStateOf(progress?.volume ?: .6f) }
             Text("Äänenvoimakkuus ${(volume * 100).toInt()} %")
             Slider(value = volume, onValueChange = { value -> audio.stop(); volume = value },
                 onValueChangeFinished = { progress?.let { audio.configure(it.muted, volume); save(it.copy(volume = volume)) } },

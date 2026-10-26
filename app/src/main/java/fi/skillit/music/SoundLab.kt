@@ -6,13 +6,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.*
-import kotlinx.coroutines.delay
 
 @Composable
 fun SoundLab(audio: PlaybackController, silent: Boolean) {
     var status by remember { mutableStateOf("Valitse sävel tai tahtilaji ja kuuntele.") }
-    var playing by remember { mutableStateOf(false) }
-    LaunchedEffect(audio) { while (true) { playing = audio.playing; delay(80) } }
+    val playing by audio.playingState.collectAsState()
     fun play(samples: ShortArray) {
         status = if (audio.play(samples)) "Soitetaan…" else if (audio.failure) "Ääntä ei voitu toistaa. Voit yrittää uudelleen." else "Äänet ovat pois päältä. Muuta asetuksia kuunnellaksesi."
     }
