@@ -50,7 +50,7 @@ fun SkillitTheme(content: @Composable () -> Unit) {
 }
 
 @Composable
-fun SkillitApp(repository: ProgressRepository) {
+fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null) {
     var progress by remember { mutableStateOf<SavedProgress?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
@@ -60,7 +60,7 @@ fun SkillitApp(repository: ProgressRepository) {
     var settings by rememberSaveable { mutableStateOf(false) }
     var confirmReset by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val audio = remember { PlaybackController(AndroidPcmOutput()) }
+    val audio = remember(output) { PlaybackController(output ?: AndroidPcmOutput()) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle, audio) {
         val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) audio.stop() }
@@ -126,8 +126,15 @@ fun SkillitApp(repository: ProgressRepository) {
                     !saved.started || !inGame -> {
                         Text("Nuottiseikkailu", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.semantics { heading() })
                         Text("Tutki säveliä ja rytmejä omaan tahtiisi. Ei kiirettä!")
-                        if (adventure != null) IslandMap(adventure, saved.practice.keys, busy) { level, _ ->
-                            save(saved.copy(practice = saved.practice + (level to saved.practice[level].orEmpty()))) {
+                        if (adventure != null) IslandMap(adventure, saved.practice.keys, busy) { level, practice ->
+                            if (!practice) {
+                                val continued = ExerciseSession.restore(MusicPack.questions, saved.events)
+                                continued.current?.let { attempt ->
+                                    if (attempt.question.level < level && continued.feedback?.correct == true) continued.next(attempt.token)
+                                }
+                                save(saved.copy(started = true, events = continued.events)) { practiceLevel = -1; inGame = true }
+                            }
+                            else save(saved.copy(practice = saved.practice + (level to saved.practice[level].orEmpty()))) {
                                 practiceLevel = level; inGame = true
                             }
                         }
@@ -205,15 +212,17 @@ fun SkillitApp(repository: ProgressRepository) {
                     onCheckedChange = { muted -> audio.stop(); progress?.let { save(it.copy(muted = muted)) } },
                     modifier = Modifier.semantics { contentDescription = "Äänet mykistetty" })
             }
-            Text("Äänenvoimakkuus ${((progress?.volume ?: .6f) * 100).toInt()} %")
-            Slider(value = progress?.volume ?: .6f, onValueChange = { value -> progress?.let { save(it.copy(volume = value)) } },
+            var volume by remember(progress?.volume) { mutableStateOf(progress?.volume ?: .6f) }
+            Text("Äänenvoimakkuus ${(volume * 100).toInt()} %")
+            Slider(value = volume, onValueChange = { value -> audio.stop(); volume = value },
+                onValueChangeFinished = { progress?.let { save(it.copy(volume = volume)) } },
                 steps = 9, enabled = progress != null && !busy,
                 modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Äänenvoimakkuus" })
             TextButton(onClick = { settings = false; confirmReset = true }, enabled = !busy) { Text("Nollaa edistyminen") }
         }
     }, confirmButton = { TextButton(onClick = { settings = false }) { Text("Sulje") } })
     if (confirmReset) AlertDialog(onDismissRequest = { confirmReset = false }, title = { Text("Aloitetaanko alusta?") },
-        text = { Text("Tämän seikkailun tehtävät ja XP nollataan. Ääniasetus säilyy.") },
+        text = { Text("Seikkailu ja harjoituskierrokset nollataan. Ääniasetukset säilyvät.") },
         confirmButton = { TextButton(onClick = { save(SavedProgress(muted = progress?.muted ?: false, volume = progress?.volume ?: .6f)) { confirmReset = false; inGame = true; practiceLevel = -1; rhythm = false } }, enabled = !busy) { Text("Nollaa") } },
         dismissButton = { TextButton(onClick = { confirmReset = false }, enabled = !busy) { Text("Peruuta") } })
 }
