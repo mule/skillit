@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,9 +50,9 @@ fun SkillitApp(repository: ProgressRepository) {
     var progress by remember { mutableStateOf<SavedProgress?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
-    var inGame by remember { mutableStateOf(true) }
-    var settings by remember { mutableStateOf(false) }
-    var confirmReset by remember { mutableStateOf(false) }
+    var inGame by rememberSaveable { mutableStateOf(true) }
+    var settings by rememberSaveable { mutableStateOf(false) }
+    var confirmReset by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val session = remember(progress) { progress?.let { ExerciseSession.restore(MusicPack.questions, it.events) } }
     fun load() {
@@ -133,24 +134,36 @@ fun SkillitApp(repository: ProgressRepository) {
                         if (attempt.retry) Text("Uusi yritys · voit saada 5 XP")
                         Text(question.prompt, style = MaterialTheme.typography.titleLarge)
                         Staff(MusicPack.item(question.id).task)
+                        val feedback = session.feedback
                         question.choices.forEach { choice ->
+                            val choiceStatus = feedback?.let {
+                                listOfNotNull(
+                                    if (it.choiceId == choice.id) "Valitsit tämän" else null,
+                                    if (question.correctId == choice.id) "Oikea vastaus" else null,
+                                ).joinToString(" · ").takeIf { text -> text.isNotEmpty() }
+                            }
                             OutlinedButton(onClick = { act { it.answer(attempt.token, choice.id) } }, enabled = !busy && session.feedback == null,
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
-                                Text(choice.label, style = MaterialTheme.typography.titleMedium)
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).semantics {
+                                    if (choiceStatus != null) stateDescription = choiceStatus
+                                }) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(choice.label, style = MaterialTheme.typography.titleMedium,
+                                        color = if (feedback != null) MaterialTheme.colorScheme.onSurface else Color.Unspecified)
+                                    if (choiceStatus != null) Text(choiceStatus, color = MaterialTheme.colorScheme.onSurface)
+                                }
                             }
                         }
-                        val feedback = session.feedback
                         if (feedback == null) {
                             OutlinedButton(onClick = { act { it.showHint(attempt.token) } }, enabled = !busy && !session.hintVisible,
                                 modifier = Modifier.heightIn(min = 48.dp)) { Text("Vihje") }
                             if (session.hintVisible) Text(question.hint, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
                         } else {
                             Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(if (feedback.correct) "Hienoa! +${feedback.xp} XP" else if (attempt.retry) "Harjoitellaan vielä. Voit yrittää uudelleen." else "Harjoitellaan vielä. Saat uuden yrityksen tason lopussa.",
+                                Text(if (feedback.correct) "Hienoa! +${feedback.xp} XP" else if (session.retryIsNext) "Harjoitellaan vielä. Voit yrittää uudelleen." else "Harjoitellaan vielä. Saat uuden yrityksen tason lopussa.",
                                     style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
                                 Text(question.explanation)
                             } }
-                            Button(onClick = { act { it.next(attempt.token) } }, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text(if (!feedback.correct && attempt.retry) "Yritä uudelleen" else "Jatka") }
+                            Button(onClick = { act { it.next(attempt.token) } }, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text(if (session.retryIsNext) "Yritä uudelleen" else "Jatka") }
                         }
                         TextButton(onClick = { inGame = false }, enabled = !busy, modifier = Modifier.heightIn(min = 48.dp)) { Text("Etusivu") }
                     }

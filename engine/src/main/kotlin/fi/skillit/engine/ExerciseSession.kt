@@ -47,6 +47,9 @@ class ExerciseSession(val questions: List<Question>) {
     var feedback: Feedback? = null
         private set
     val complete: Boolean get() = pending.isEmpty()
+    /** True only when continuing a miss will show this same question again. */
+    val retryIsNext: Boolean get() = feedback?.correct == false &&
+        pending.drop(1).none { it.question.level == current?.question?.level }
     val xp: Int get() = results.sumOf { it.xp }
     val firstTryCorrect: Int get() = results.count { !it.retry && it.correct }
 

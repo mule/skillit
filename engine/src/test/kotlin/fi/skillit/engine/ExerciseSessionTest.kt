@@ -142,4 +142,29 @@ class ExerciseSessionTest {
         assertEquals(5, restored.xp)
         assertFalse(restored.answer("q1:80", "yes"))
     }
+    @Test fun retryGuidanceDistinguishesQueuedReviewsFromTheOnlyRemainingQuestion() {
+        var session = ExerciseSession(questions)
+        repeat(5) { index ->
+            val token = session.current!!.token
+            session.answer(token, if (index < 2) "no" else "yes")
+            session.next(token)
+        }
+        assertEquals("q1:1", session.current!!.token)
+        session.answer("q1:1", "no")
+        assertFalse(session.retryIsNext)
+        session = ExerciseSession.restore(questions, session.events)
+        assertFalse(session.retryIsNext)
+        session.next("q1:1")
+        assertEquals("q2:1", session.current!!.token)
+        session.answer("q2:1", "yes")
+        assertFalse(session.retryIsNext)
+        session.next("q2:1")
+        assertEquals("q1:2", session.current!!.token)
+        session.answer("q1:2", "no")
+        assertTrue(session.retryIsNext)
+        session.next("q1:2")
+        assertEquals("q1:3", session.current!!.token)
+        assertFalse(session.retryIsNext)
+        assertEquals(35, session.xp)
+    }
 }

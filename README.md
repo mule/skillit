@@ -45,6 +45,11 @@ branch is pushed. A local pass does not establish a GitHub Actions pass.
 - Choices keep a deterministic order; every new attempt has a distinct token so
   stale taps cannot answer the next attempt. New games reset session XP only
   after explicit confirmation. Whole rests are excluded from authored 2/4 tasks.
+- With two unresolved questions, a miss says the item returns at the end of the
+  level and “Jatka” opens the next review. Only when the same item is next does
+  the button say “Yritä uudelleen”. Queue order and unlimited retries are unchanged.
+- Selected/correct choice text and accessibility states appear only after an answer.
+  Returning home and open settings/reset dialogs survive activity recreation.
 - Tap an answer twice and rotate during feedback: no duplicate award.
 - Kill and reopen the process during a question, hint, feedback and retry;
   verify question, XP and retry state survive. Finish, reopen and verify summary.
@@ -58,10 +63,12 @@ branch is pushed. A local pass does not establish a GitHub Actions pass.
 
 ## M1 verification checkpoint (2026-10-26)
 
-Local verification: debug APK build, lint, 9 JVM tests and the full 9-test Android
-instrumentation suite pass on an API 35 emulator in airplane mode. All four
+Local verification: debug APK build, lint, 10 JVM tests and the full 12-test Android
+instrumentation suite pass on an API 35 emulator in airplane mode. All seven
 gameplay tests also pass at 360 dp portrait / 640 dp landscape with 150% text size.
-Coverage includes a complete 20-question session, repeated misses, user-controlled
+Coverage includes multiple unresolved questions, accurate queued/immediate retry
+copy, post-answer choice semantics and saved navigation/dialog state, plus the
+complete 20-question session, repeated misses, user-controlled
 retry, free hints, 195-XP mixed scoring, activity recreation, completion/reset/mute,
 accessible choice targets, position semantics, version/identity rejection and
 explicit recovery from corrupt session/protobuf data.
@@ -72,7 +79,7 @@ misses, preserves unresolved questions, and eventually completes with the correc
 reject stale attempts. Action-history storage grows with attempts; no fixed
 attempt limit is imposed. Performance beyond this fixture has not been measured.
 
-A separate force-stop/cold-start check restored second-miss feedback unchanged.
+An earlier force-stop/cold-start check at `46babfc` restored second-miss feedback unchanged.
 The child then chose a third attempt, used a free hint and earned 5 XP; the next
 level remained unavailable until the correct answer. APK signature verification
 passed; APK permissions have no Internet.
@@ -89,10 +96,17 @@ adb pull /sdcard/Android/data/fi.skillit/files/notation tmp/verify/notation
 ```
 
 These captures support visual review; there is no automated pixel-golden comparison.
-The initial implementation's captures were visually inspected. GitHub Actions,
-a physical device, other Android API levels and spoken TalkBack navigation have
-not been verified. Lint has no errors; it reports newer dependency/target versions.
+The initial implementation's captures were visually inspected, along with the
+review-fix feedback/answer-marking captures. Earlier GitHub checks and independent
+review/QA passed at `ff3c1c2`; fresh review of these fixes is pending. The parent
+verified installation/launch of the earlier APK on a Samsung SM-X710, not full
+physical gameplay. The current APK has not been tested on a physical device.
+Other Android API levels and spoken TalkBack navigation remain unverified. Lint has no errors; it reports newer dependency/target versions.
 Independent review/QA remains a delivery gate. This checkpoint does not close the epic.
 
 Bravura music glyphs are bundled under the SIL Open Font License 1.1; the full
 license and source information are in `app/src/main/assets/licenses/`.
+
+Version-1 question/choice IDs retain their original label mappings. Neighbouring-pitch
+distractors are deferred because changing the labels behind saved choice IDs would
+misrepresent historical selections; that needs a planned pack migration.

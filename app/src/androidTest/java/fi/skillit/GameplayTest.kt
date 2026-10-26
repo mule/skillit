@@ -5,6 +5,10 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import fi.skillit.music.MusicPack
 import kotlinx.coroutines.runBlocking
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.graphics.asAndroidBitmap
+import android.graphics.Bitmap
+import java.io.File
 import fi.skillit.music.notationDescription
 import org.junit.Before
 import org.junit.Rule
@@ -24,6 +28,12 @@ class GameplayTest {
     }
     private fun tap(text: String) { await(text); compose.onNodeWithText(text).performScrollTo().performClick() }
     private fun visible(text: String) { await(text); compose.onNodeWithText(text).performScrollTo().assertIsDisplayed() }
+
+    private fun capture(name: String) {
+        val directory = File(compose.activity.getExternalFilesDir(null), "review-fixes").apply { mkdirs() }
+        val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+        File(directory, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
 
     @Test fun childCanStartAHintedQuestionAndReadFeedback() {
         tap("Aloita seikkailu")
@@ -110,5 +120,71 @@ class GameplayTest {
             node.assertHeightIsAtLeast(48.dp)
         }
         compose.onNodeWithText("Vihje").assertHeightIsAtLeast(48.dp)
+    }
+    @Test fun multipleMissesDescribeQueuedAndImmediateRetriesAccurately() {
+        tap("Aloita seikkailu")
+        tap("puolinuotti")
+        tap("Jatka")
+        tap("4")
+        tap("Jatka")
+        listOf("4", "½", "2").forEach { answer -> tap(answer); tap("Jatka") }
+        tap("puolinuotti")
+        visible("Harjoitellaan vielä. Saat uuden yrityksen tason lopussa.")
+        compose.onNodeWithText("Yritä uudelleen").assertDoesNotExist()
+        capture("01-queued-review-feedback")
+        compose.activityRule.scenario.recreate()
+        visible("Harjoitellaan vielä. Saat uuden yrityksen tason lopussa.")
+        tap("Jatka")
+        compose.onNodeWithContentDescription(notationDescription(MusicPack.items[1].task)).assertExists()
+        tap("2")
+        visible("Hienoa! +5 XP")
+        tap("Jatka")
+        tap("puolinuotti")
+        visible("Harjoitellaan vielä. Voit yrittää uudelleen.")
+        tap("Yritä uudelleen")
+        compose.onNodeWithContentDescription(notationDescription(MusicPack.items[0].task)).assertExists()
+        tap("neljäsosanuotti")
+        visible("Hienoa! +5 XP")
+        visible("Taso 1/4 · 5/20 ratkaistu · 40 XP")
+        tap("Jatka")
+        visible("Sävelsalapoliisi")
+    }
+    @Test fun chosenAndCorrectChoicesAreMarkedOnlyAfterAnswerAndSurviveRecreation() {
+        val chosen = SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Valitsit tämän")
+        val correct = SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Oikea vastaus")
+        tap("Aloita seikkailu")
+        compose.onAllNodes(chosen).assertCountEquals(0)
+        compose.onAllNodes(correct).assertCountEquals(0)
+        tap("puolinuotti")
+        compose.onNode(hasText("puolinuotti") and chosen).assertExists()
+        compose.onNode(hasText("neljäsosanuotti") and correct).performScrollTo().assertIsDisplayed()
+        capture("02-answer-markings")
+        compose.activityRule.scenario.recreate()
+        compose.waitUntilExactlyOneExists(hasText("puolinuotti") and chosen, 10_000)
+        compose.onNode(hasText("neljäsosanuotti") and correct).assertExists()
+        tap("Jatka")
+        compose.onAllNodes(chosen).assertCountEquals(0)
+        compose.onAllNodes(correct).assertCountEquals(0)
+        tap("2")
+        compose.onNode(hasText("2") and SemanticsMatcher.expectValue(
+            SemanticsProperties.StateDescription, "Valitsit tämän · Oikea vastaus",
+        )).assertExists()
+    }
+    @Test fun homeSettingsAndResetConfirmationSurviveActivityRecreation() {
+        tap("Aloita seikkailu")
+        tap("Etusivu")
+        compose.activityRule.scenario.recreate()
+        visible("Jatka seikkailua")
+        tap("Asetukset")
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithText("Sulje").assertIsDisplayed().performClick()
+        tap("Asetukset")
+        compose.onNodeWithText("Nollaa edistyminen").performClick()
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithText("Aloitetaanko alusta?").assertIsDisplayed()
+        compose.onNodeWithText("Peruuta").performClick()
+        visible("Jatka seikkailua")
+        tap("Jatka seikkailua")
+        visible("Nuottininja")
     }
 }
