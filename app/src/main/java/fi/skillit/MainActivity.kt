@@ -143,7 +143,9 @@ fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null) {
                 val saved = progress
                 when {
                     saved == null -> if (busy) Text("Ladataan seikkailua…")
-                    nature -> NatureScreen { nature = false; inGame = false }
+                    nature -> NatureScreen(onQuestionChanged = { scope.launch { scroll.scrollTo(0) } }) {
+                        nature = false; inGame = false
+                    }
                     rhythm -> RhythmScreen(audio, settings || confirmReset) { rhythm = false; inGame = false }
                     !saved.started || !inGame -> {
                         Text("Nuottiseikkailu", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.semantics { heading() })

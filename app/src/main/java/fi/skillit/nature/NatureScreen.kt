@@ -15,6 +15,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -30,11 +31,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun NatureScreen(onExit: () -> Unit) {
+fun NatureScreen(onQuestionChanged: () -> Unit, onExit: () -> Unit) {
     var index by rememberSaveable { mutableIntStateOf(0) }
     var correct by rememberSaveable { mutableIntStateOf(0) }
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var hintShown by rememberSaveable { mutableStateOf(false) }
+    // The shell owns scrolling; notify it on entry, advancement, and a new trip.
+    LaunchedEffect(index) { onQuestionChanged() }
     val questions = NaturePack.questions
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Niittyetsivä", style = MaterialTheme.typography.headlineLarge,
