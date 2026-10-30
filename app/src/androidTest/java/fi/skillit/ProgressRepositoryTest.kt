@@ -78,7 +78,7 @@ class ProgressRepositoryTest {
         val base = """{"schema":1,"pack":"music-grade4-fi","version":1,"started":true,"muted":true,"events":[]}"""
         val incompatible = listOf(
             JSONObject(base).put("schema", 0),
-            JSONObject(base).put("schema", 2),
+            JSONObject(base).put("schema", 3),
             JSONObject(base).put("pack", "removed-pack"),
             JSONObject(base).put("version", 0),
             JSONObject(base).put("version", 2),
@@ -103,6 +103,92 @@ class ProgressRepositoryTest {
             scope.coroutineContext.job.cancelAndJoin()
             file.delete()
         }
+        Unit
+    }
+    @Test fun installedV1SaveMigratesWithoutChangingFeedbackQueueChoicesMuteOrXp() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val file = File(context.cacheDir, "migrate-${System.nanoTime()}.preferences_pb")
+        var scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        var store = PreferenceDataStoreFactory.create(scope = scope) { file }
+        val raw = """{"schema":1,"pack":"music-grade4-fi","version":1,"started":true,"muted":true,"events":[{"action":"HINT","token":"m1:0","choice":""},{"action":"ANSWER","token":"m1:0","choice":"o0"}]}"""
+        try {
+            store.edit { it[ProgressRepository.key] = raw }
+            var repo = ProgressRepository(store)
+            val migrated = repo.load()
+            val before = ExerciseSession.restore(MusicPack.questions, migrated.events)
+            assertEquals("m1:0", before.current!!.token)
+            assertEquals("o0", before.feedback!!.choiceId)
+            assertTrue(before.hintVisible)
+            assertTrue(migrated.muted)
+            assertEquals(.6f, migrated.volume)
+            assertEquals(2, JSONObject(store.data.first()[ProgressRepository.key]!!).getInt("schema"))
+            val completed = ExerciseSession(MusicPack.questions)
+            while (!completed.complete) {
+                val a = completed.current!!; completed.answer(a.token, a.question.correctId); completed.next(a.token)
+            }
+            // A genuine v1-format completed event log unlocks all islands on first M2 load.
+            val old = JSONObject(raw).put("events", JSONArray().apply { completed.events.forEach { e ->
+                put(JSONObject().put("action", e.action.name).put("token", e.token).put("choice", e.choiceId))
+            } })
+            store.edit { it[ProgressRepository.key] = old.toString() }
+            val saved = repo.load()
+            assertTrue(fi.skillit.music.Adventure.islands(ExerciseSession.restore(MusicPack.questions, saved.events)).all { it == fi.skillit.music.IslandState.COMPLETED })
+            val replay = ExerciseSession(fi.skillit.music.Adventure.questions(2))
+            val a = replay.current!!; replay.answer(a.token, a.question.correctId)
+            val withPractice = saved.copy(volume = .3f, practice = mapOf(2 to replay.events))
+            repo.save(withPractice)
+            scope.coroutineContext.job.cancelAndJoin()
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            store = PreferenceDataStoreFactory.create(scope = scope) { file }
+            repo = ProgressRepository(store)
+            assertEquals(withPractice, repo.load())
+            assertEquals(200, ExerciseSession.restore(MusicPack.questions, repo.load().events).xp)
+            assertEquals(10, ExerciseSession.restore(fi.skillit.music.Adventure.questions(2), repo.load().practice.getValue(2)).xp)
+        } finally { scope.coroutineContext.job.cancelAndJoin(); file.delete() }
+        Unit
+    }
+    @Test fun literalM1RetryFeedbackKeepsQueueXpAndChoiceIdentityDuringUpgrade() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val file = File(context.cacheDir, "migrate-retry-${System.nanoTime()}.preferences_pb")
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val store = PreferenceDataStoreFactory.create(scope = scope) { file }
+        val repo = ProgressRepository(store)
+        // Literal installed M1 encoding: four resolved answers, followed by another miss on m1.
+        val raw = """{"schema":1,"pack":"music-grade4-fi","version":1,"started":true,"muted":true,"events":[
+          {"action":"ANSWER","token":"m1:0","choice":"o0"},{"action":"NEXT","token":"m1:0","choice":""},
+          {"action":"ANSWER","token":"m2:0","choice":"o2"},{"action":"NEXT","token":"m2:0","choice":""},
+          {"action":"ANSWER","token":"m3:0","choice":"o1"},{"action":"NEXT","token":"m3:0","choice":""},
+          {"action":"ANSWER","token":"m4:0","choice":"o0"},{"action":"NEXT","token":"m4:0","choice":""},
+          {"action":"ANSWER","token":"m5:0","choice":"o3"},{"action":"NEXT","token":"m5:0","choice":""},
+          {"action":"HINT","token":"m1:1","choice":""},{"action":"ANSWER","token":"m1:1","choice":"o0"}]}"""
+        try {
+            store.edit { it[ProgressRepository.key] = raw }
+            val saved = repo.load()
+            val resumed = ExerciseSession.restore(MusicPack.questions, saved.events)
+            assertTrue(saved.muted)
+            assertEquals("m1:1", resumed.current!!.token)
+            assertEquals(40, resumed.xp)
+            assertEquals(4, resumed.resolvedCount)
+            assertTrue(resumed.hintVisible)
+            assertTrue(resumed.retryIsNext)
+            assertFalse(resumed.feedback!!.correct)
+            assertEquals("o0", resumed.feedback!!.choiceId)
+            assertEquals("puolinuotti", resumed.current!!.question.choices.single { it.id == "o0" }.label)
+            assertEquals(fi.skillit.music.IslandState.LOCKED, fi.skillit.music.Adventure.islands(resumed)[1])
+            // A second v1 fixture ends on accepted retry feedback, before NEXT to island 2.
+            val accepted = JSONObject(raw)
+            accepted.getJSONArray("events")
+                .put(JSONObject("""{"action":"NEXT","token":"m1:1","choice":""}"""))
+                .put(JSONObject("""{"action":"ANSWER","token":"m1:2","choice":"o3"}"""))
+            store.edit { it[ProgressRepository.key] = accepted.toString() }
+            val finalFeedback = ExerciseSession.restore(MusicPack.questions, repo.load().events)
+            assertEquals(45, finalFeedback.xp)
+            assertEquals("m1:2", finalFeedback.current!!.token)
+            assertEquals(5, finalFeedback.feedback!!.xp)
+            assertEquals(fi.skillit.music.IslandState.CURRENT, fi.skillit.music.Adventure.islands(finalFeedback)[1])
+            assertTrue(finalFeedback.next("m1:2"))
+            assertEquals("m6:0", finalFeedback.current!!.token)
+        } finally { scope.coroutineContext.job.cancelAndJoin(); file.delete() }
         Unit
     }
     @Test fun longRepeatedReviewSurvivesDataStoreReopenAndEventuallyCompletesForFiveXp() = runBlocking {

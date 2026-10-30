@@ -6,7 +6,9 @@ No account, network permission, ads, analytics or backend. All content ships in 
 
 The `music-grade4-fi` pack is original content based on the topics in issues #1–#8.
 The three original worksheets were unavailable; this pack has **not** been compared
-with them. M2 audio, interactive rhythm and adventure maps, and M3 mastery are deferred.
+with them. M2 adds offline audio, interactive rhythm practice and a four-island map. M3 mastery and parent tools remain deferred.
+
+Niittyetsivä is a separate, offline picture-identification and nature-knowledge game based on the user's photographs of Finnish environmental studies textbook pages 4–13. It has 27 questions, twenty cropped species illustrations, optional clues, immediate feedback and printed-page references. It does not change Nuottiseikkailu saves or XP. See `docs/nature-source-pages-4-13.md` for the page map and `docs/nature-readable-text-fi.md` for legible Finnish text and obscured-text notes. The textbook's publication details and illustration rights were not visible in the supplied pages; confirm the right to redistribute the crops before publishing a release.
 
 ## Build and install
 
@@ -53,7 +55,7 @@ branch is pushed. A local pass does not establish a GitHub Actions pass.
 - Tap an answer twice and rotate during feedback: no duplicate award.
 - Kill and reopen the process during a question, hint, feedback and retry;
   verify question, XP and retry state survive. Finish, reopen and verify summary.
-- Toggle mute and reopen; confirm persistence. M1 has no audio playback.
+- Toggle mute and adjust volume, then reopen; confirm both persist. Playback stops on navigation, settings, backgrounding and disposal.
 - Reset requires confirmation and clears progress; mute remains a preference.
 - Check notation on a narrow phone, landscape and large font: C4 ledger line,
   H naming, stems, hollow note heads, eighth flags/beams, rests and stacked meters.
@@ -61,52 +63,92 @@ branch is pushed. A local pass does not establish a GitHub Actions pass.
   notation descriptions describe geometry without revealing the pitch-name answer.
 - Verify 48 dp tap targets, text feedback in addition to colour and readable contrast.
 
-## M1 verification checkpoint (2026-10-26)
+## M2 behavior and compatibility
 
-Local verification: debug APK build, lint, 10 JVM tests and the full 12-test Android
-instrumentation suite pass on an API 35 emulator in airplane mode. All seven
-gameplay tests also pass at 360 dp portrait / 640 dp landscape with 150% text size.
-Coverage includes multiple unresolved questions, accurate queued/immediate retry
-copy, post-answer choice semantics and saved navigation/dialog state, plus the
-complete 20-question session, repeated misses, user-controlled
-retry, free hints, 195-XP mixed scoring, activity recreation, completion/reset/mute,
-accessible choice targets, position semantics, version/identity rejection and
-explicit recovery from corrupt session/protobuf data.
+The map has four music islands. Correctly resolving all five original questions on
+an island earns its music badge and unlocks the next island. Misses never remove
+progress or points. Completed islands remain available for practice. Each island
+has its own resumable practice round with **separate practice XP** (10/5/0, free
+hints and unlimited same-level retries). Starting a new practice round replaces
+that island's practice result; it does not add to the original adventure total.
+The original 20-question result and answer identities remain unchanged. Map actions
+say “Harjoittele” for a run with no answers, “Jatka” for unfinished practice and
+“Katso … harjoitustulos” for a completed run. The brief badge animation runs on each
+map appearance, including recreation; badge ownership comes from saved history.
 
-The storage test persists and reopens a save larger than 100 KB after 1,000
-misses, preserves unresolved questions, and eventually completes with the correct
-5-XP review awards. Engine tests replay after each of 80 consecutive misses and
-reject stale attempts. Action-history storage grows with attempts; no fixed
-attempt limit is imposed. Performance beyond this fixture has not been measured.
+System Back returns adventure, practice and rhythm to the map, stopping playback
+and cancelling timing. Dialog Back dismisses the dialog; Back on the map retains
+the platform exit behavior. Failed sound-setting saves restore the displayed value
+and controller to the persisted preference, including repeated failures.
 
-An earlier force-stop/cold-start check at `46babfc` restored second-miss feedback unchanged.
-The child then chose a third attempt, used a free hint and earned 5 XP; the next
-level remained unavailable until the correct answer. APK signature verification
-passed; APK permissions have no Internet.
+Sävelpaja plays C4–D4–E4–F4–G4–A4–H4–C5 and 2/4 or 4/4 pulse examples.
+One owned playback controller sends finite synthesized mono PCM16 at 24 kHz to
+AudioTrack, replacing the previous sound on every play. Notes use concert A =
+440 Hz and short attack/release ramps. Rests are silent. Mute and volume are local
+preferences; the Android media volume also applies. No microphone or new
+permissions are used. Sound stops on background, navigation, settings and disposal;
+playback never resumes automatically after cancellation.
 
-The screenshot test captures 21 notation examples at 320 dp width: all eight
-pitches, four note/rest durations, both beam directions, flags and both meters.
-To preserve captures, run instrumentation with Android's APK-retention flag, then
-retrieve them. The flag also keeps the app installed for inspection; see the
-[AndroidX rationale](https://android.googlesource.com/platform/frameworks/support/+/eb74b1a4b3527414639994574a201f125aff90f5).
+Rytmipaja generates deterministic original 2/4 and 4/4 bars. Complete the visible
+prefix with notes or rests using buttons or long-press dragging into the bar.
+Validation sums integer eighth-note units, accepts any exact-duration completion,
+and explains underfill or overflow. Correct completions play the child's rhythm.
+The example can also be read and heard without timing. Optional tap practice has
+a visible three-count preparation, a visual beat pulse and non-punitive feedback
+within 140 ms of note onsets; rests have no tap target. Taps closer than 80 ms are
+ignored. This is informal practice using the monotonic UI clock, not calibrated
+latency measurement. Timing never gates XP, unlocks or completion. Start, stop and
+retry are child-controlled. Backgrounding and opening settings cancel a timing
+run. The bar, meter and seed survive recreation; an active timing run is cancelled.
+
+Storage schema 2 retains the installed M1 DataStore file/key and pack version 1.
+It replays and validates v1 events before an atomic upgrade, preserving question,
+choice, hint, feedback, retry queue, mute and computed XP. Earned islands are derived
+from accepted correct answers, including completed v1 saves. Practice event logs
+are stored separately per island; volume defaults to 60% for a v1 save. Invalid
+history, unknown schemas and corrupt bytes show explicit recovery instead of a
+silent reset. M1 cannot read an upgraded schema-2 save: downgrading the APK is not
+supported and would show M1's recovery screen. A malformed schema-2 practice log
+also requests explicit recovery; no partial history is silently discarded.
+Reset clears adventure and practice with confirmation while keeping
+current sound preferences. A force-stopped practice round can be resumed from its
+island on the map; the original adventure resumes by default on a cold launch.
+
+## Local verification
+
+Use the build and instrumentation commands above. The M2 implementation report
+under `.pane/m2-implementation-status.md` records the exact local head, APK hash,
+commands, captures and remaining review/QA gates. `.pane/` and `tmp/verify/` are
+ignored local evidence and are not part of the APK or source distribution.
+
+Tests cover deterministic PCM/pitch/rest/frame boundaries and playback lifecycle;
+generated rhythm validity, duration completion and tap-session clocks; island
+unlock/replay; real DataStore v1 migration, reopen and corrupt-data recovery; and
+Compose controls, dragging, accessible button alternatives, replay and the original
+20-question gameplay. The AudioTrack test verifies accepted PCM, advancing playback
+head and release. This is output-boundary evidence, **not proof of audible quality
+on a physical device**. No physical-tablet or spoken TalkBack pass is claimed.
+Original worksheets remain unavailable. Independent source review and QA remain
+required before publication; local green tests do not establish CI success.
+
+Notation instrumentation captures 21 examples (all eight pitches, four note/rest
+durations, beam directions, flags and meters). There is no automated pixel-golden
+comparison. To retain the app and pull screenshots after a test run:
 
 ```sh
 ./gradlew :app:connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
 adb pull /sdcard/Android/data/fi.skillit/files/notation tmp/verify/notation
+adb pull /sdcard/Android/data/fi.skillit/files/m2 tmp/verify/m2
 ```
 
-These captures support visual review; there is no automated pixel-golden comparison.
-The initial implementation's captures were visually inspected, along with the
-review-fix feedback/answer-marking captures. Earlier GitHub checks and independent
-review/QA passed at `ff3c1c2`; fresh review of these fixes is pending. The parent
-verified installation/launch of the earlier APK on a Samsung SM-X710, not full
-physical gameplay. The current APK has not been tested on a physical device.
-Other Android API levels and spoken TalkBack navigation remain unverified. Lint has no errors; it reports newer dependency/target versions.
-Independent review/QA remains a delivery gate. This checkpoint does not close the epic.
+Action histories grow with attempts. The storage regression persists/reopens over
+100 KB after 1,000 misses and then resolves the questions; no fixed retry cap is
+imposed. Performance beyond that fixture has not been measured. Other Android API
+levels, output hardware and spoken accessibility behavior remain unverified.
 
 Bravura music glyphs are bundled under the SIL Open Font License 1.1; the full
 license and source information are in `app/src/main/assets/licenses/`.
 
 Version-1 question/choice IDs retain their original label mappings. Neighbouring-pitch
-distractors are deferred because changing the labels behind saved choice IDs would
+distractors remain deferred because changing labels behind saved choice IDs would
 misrepresent historical selections; that needs a planned pack migration.

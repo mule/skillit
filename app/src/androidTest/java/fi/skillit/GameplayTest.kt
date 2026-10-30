@@ -26,7 +26,10 @@ class GameplayTest {
     private fun await(text: String) {
         compose.waitUntilAtLeastOneExists(hasText(text), 10_000)
     }
-    private fun tap(text: String) { await(text); compose.onNodeWithText(text).performScrollTo().performClick() }
+    private fun tap(text: String) {
+        compose.waitUntilAtLeastOneExists(hasText(text) and isEnabled(), 10_000)
+        compose.onNodeWithText(text).performScrollTo().performClick()
+    }
     private fun visible(text: String) { await(text); compose.onNodeWithText(text).performScrollTo().assertIsDisplayed() }
 
     private fun capture(name: String) {
