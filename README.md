@@ -8,6 +8,8 @@ The `music-grade4-fi` pack is original content based on the topics in issues #1�
 The three original worksheets were unavailable; this pack has **not** been compared
 with them. M2 adds offline audio, interactive rhythm practice and a four-island map. M3 mastery and parent tools remain deferred.
 
+Niittyetsivä is a separate, offline picture-identification and nature-knowledge game based on the user's photographs of Finnish environmental studies textbook pages 4–13. It has 27 questions, twenty cropped species illustrations, optional clues, immediate feedback and printed-page references. It does not change Nuottiseikkailu saves or XP. See `docs/nature-source-pages-4-13.md` for the page map and `docs/nature-readable-text-fi.md` for legible Finnish text and obscured-text notes. The textbook's publication details and illustration rights were not visible in the supplied pages; confirm the right to redistribute the crops before publishing a release.
+
 ## Build and install
 
 Requirements: JDK 21, Android SDK platform 35 and build tools, accepted SDK licenses.
