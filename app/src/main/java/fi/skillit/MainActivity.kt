@@ -124,7 +124,9 @@ fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null) {
     LaunchedEffect(repository) { load() }
     Surface(Modifier.fillMaxSize()) {
         val scroll = rememberScrollState()
-        LaunchedEffect(session?.current?.token) { scroll.scrollTo(0) }
+        LaunchedEffect(session?.current?.token, progress?.started == true && inGame, rhythm, nature, practiceLevel) {
+            scroll.scrollTo(0)
+        }
         Column(Modifier.safeDrawingPadding().fillMaxSize().verticalScroll(scroll).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Column(Modifier.widthIn(max = 600.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {

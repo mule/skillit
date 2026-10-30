@@ -17,6 +17,7 @@ import fi.skillit.music.MusicPack
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.IOException
 
 val Context.skillitDataStore by preferencesDataStore(name = "skillit-progress", corruptionHandler = ProgressRepository.corruptionHandler)
 data class SavedProgress(
@@ -46,9 +47,13 @@ class ProgressRepository(private val dataStore: DataStore<Preferences>) {
         val progress = SavedProgress(json.getBoolean("started"), json.getBoolean("muted"), events, volume, practice)
         validate(progress)
         // Upgrade only a fully validated v1 history, atomically and without changing event identities.
-        if (schema == 1) dataStore.edit {
-            check(it[key] == raw) { "Progress changed during migration" }
-            it[key] = encode(progress)
+        if (schema == 1) try {
+            dataStore.edit {
+                check(it[key] == raw) { "Progress changed during migration" }
+                it[key] = encode(progress)
+            }
+        } catch (_: IOException) {
+            // The validated v1 history is playable; the next normal save writes schema 2.
         }
         return progress
     }

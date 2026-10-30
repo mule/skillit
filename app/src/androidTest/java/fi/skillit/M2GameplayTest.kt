@@ -114,9 +114,8 @@ class M2GameplayTest {
         tap("Rytmipaja")
         val source = compose.onNodeWithText("Lisää puolinuotti · 2 iskua")
         source.performScrollTo()
-        // ScrollTo aligns the palette at the top, hiding the preceding drop card.
-        // Bring both into view before making a real long-press drag.
-        compose.onRoot().performTouchInput { swipeDown(startY = height * .2f, endY = height * .6f, durationMillis = 200) }
+        // From the route's top, ScrollTo moves only enough to reveal the palette,
+        // keeping the preceding drop card visible for a real long-press drag.
         compose.waitForIdle()
         source.assertIsDisplayed()
         val target = compose.onNodeWithContentDescription("Täydennettävä tahti")
