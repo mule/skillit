@@ -1,6 +1,6 @@
 # Ympäristöoppi – source material, printed pages 18–33
 
-Continuation of [pages 4–13](nature-source-pages-4-13.md) and the existing **Niittyetsivä** module. The scans provided on 2026-11-01 cover **eight two-page spreads**, not eight printed pages. Pages 14–17 are **not included** in either source set.
+Continuation of [pages 4–13](nature-source-pages-4-13.md) and the existing **Niittyetsivä** module. The original partial scan covered **eight two-page spreads**; the canonical 15-spread PDF now covers printed pages 4–33. Pages 14–17 are now included in the canonical complete PDF and summarized in [the bridge notes](nature-readable-text-pages-14-17.md).
 
 ## Page index
 
