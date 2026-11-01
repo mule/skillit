@@ -1,0 +1,142 @@
+{
+ "nature_amiraaliperhonen.jpg": {
+  "bytes": 25878,
+  "height": 237,
+  "longEdge": 383,
+  "sha256": "6a9338db3133763b42f778ea2cce8a502e57242a8d1c4238ae62a5145c5ac2c1",
+  "width": 383
+ },
+ "nature_harakankello.jpg": {
+  "bytes": 11758,
+  "height": 277,
+  "longEdge": 277,
+  "sha256": "ac6d785cddf179384a7ef4d1987af09e228a460de1d8e09e901a6363767022b6",
+  "width": 190
+ },
+ "nature_heinasirkka.jpg": {
+  "bytes": 19355,
+  "height": 184,
+  "longEdge": 417,
+  "sha256": "a0a7b10a96b48be1209bb2e857831779a789b983dba0f26651f9643b9114ac56",
+  "width": 417
+ },
+ "nature_hepokatti.jpg": {
+  "bytes": 20021,
+  "height": 180,
+  "longEdge": 358,
+  "sha256": "783d1426dfce8acf90260cbf1ba652f1676facffa1d353763d463049e9f5f6f7",
+  "width": 358
+ },
+ "nature_kastemato.jpg": {
+  "bytes": 21994,
+  "height": 245,
+  "longEdge": 394,
+  "sha256": "31d7b4095fe73790a90ae6dfe4eb7fbc58b8849d64989a83b0ef00ee20851674",
+  "width": 394
+ },
+ "nature_kimalainen.jpg": {
+  "bytes": 20040,
+  "height": 362,
+  "longEdge": 362,
+  "sha256": "a5e1c55b5ae7c33ea69e27e6b2772bf1394b9a4690e2bcb2b1d76842e668d904",
+  "width": 240
+ },
+ "nature_kissankello.jpg": {
+  "bytes": 11253,
+  "height": 303,
+  "longEdge": 303,
+  "sha256": "2ae320dc71f9ec9f46b02dbd76cf6feab95cfbe066ff66a3f5fdc01b9af0ae19",
+  "width": 176
+ },
+ "nature_koiranputki.jpg": {
+  "bytes": 14646,
+  "height": 300,
+  "longEdge": 300,
+  "sha256": "8d2e377b9b5c9250733747ded9bc4388090e6c488d878bf51fc92044b6d68996",
+  "width": 177
+ },
+ "nature_kontiainen.jpg": {
+  "bytes": 13122,
+  "height": 195,
+  "longEdge": 377,
+  "sha256": "e404a8edd74cfdb8832edf2d4302e5b6bb43538253ac797634a82a92e5cd03de",
+  "width": 377
+ },
+ "nature_leppakerttu.jpg": {
+  "bytes": 18863,
+  "height": 338,
+  "longEdge": 338,
+  "sha256": "7542a59a1bc842ef84529ed4715bb064b513bf6d4808d55bdf6c547d60ba1cf0",
+  "width": 235
+ },
+ "nature_maitohorsma.jpg": {
+  "bytes": 13860,
+  "height": 330,
+  "longEdge": 330,
+  "sha256": "4ecfa455b75488f1e8821ee9096ef871d13a8aa0d0bb9f244516f9b6fbd78afc",
+  "width": 189
+ },
+ "nature_niittyleinikki.jpg": {
+  "bytes": 13493,
+  "height": 323,
+  "longEdge": 323,
+  "sha256": "19cd40c147cb88dbd5870a42260e953e60ad6a09fc91de155372a0fc041462fc",
+  "width": 185
+ },
+ "nature_paivankakkara.jpg": {
+  "bytes": 9549,
+  "height": 296,
+  "longEdge": 296,
+  "sha256": "7f18264fb5ff7c6f7d83795b61de9534d89caef116628fef22d7f6c1b94ee7be",
+  "width": 159
+ },
+ "nature_pietaryrtti.jpg": {
+  "bytes": 19788,
+  "height": 297,
+  "longEdge": 297,
+  "sha256": "935f1c2b8a1896e7fcaa7cbf6a7cabc462661e3fbd536b52f7c0a09648632be8",
+  "width": 182
+ },
+ "nature_pihasaunio.jpg": {
+  "bytes": 16551,
+  "height": 286,
+  "longEdge": 286,
+  "sha256": "44205b67ed1868776ce63eaaec6e66fd31fc04091e7ac3894adee1a395ff9e39",
+  "width": 183
+ },
+ "nature_pihatatar.jpg": {
+  "bytes": 11628,
+  "height": 300,
+  "longEdge": 300,
+  "sha256": "99ba5ba17b01c1e0b6aeeb2e39ee605d287150fd3cd2e92a3f0cfb3eb9e1bdb4",
+  "width": 186
+ },
+ "nature_pujo.jpg": {
+  "bytes": 11953,
+  "height": 287,
+  "longEdge": 287,
+  "sha256": "cc028463399a5ca530b4ce6f18bc53bf90a7d7b47f1892b18fbe39559da3da95",
+  "width": 149
+ },
+ "nature_siankarsamo.jpg": {
+  "bytes": 9163,
+  "height": 295,
+  "longEdge": 295,
+  "sha256": "696020b2d2b9d317c1efc9ba5a5df34b9b6b259440bb3e845e73cd35832e5381",
+  "width": 129
+ },
+ "nature_sitruunaperhonen.jpg": {
+  "bytes": 26591,
+  "height": 212,
+  "longEdge": 389,
+  "sha256": "83a38e1d6ecc19fbf0ee98e7e5993e4849aa340325272e5bafe8890ab45a553d",
+  "width": 389
+ },
+ "nature_vuohenputki.jpg": {
+  "bytes": 16313,
+  "height": 335,
+  "longEdge": 335,
+  "sha256": "1cdefdd31fb420e1cea87f6c64c66625cbbab0251d52e92a34d90f192194979d",
+  "width": 184
+ }
+}

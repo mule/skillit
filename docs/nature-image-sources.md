@@ -1,0 +1,78 @@
+# Nature illustration sources and crop provenance
+
+Records where each species JPEG in `app/src/main/res/drawable-nodpi/` comes from
+and how it is produced. The scanned textbook is user-provided and private: the
+PDF, full-page renders, and OCR text stay in gitignored paths (`.pane/`,
+`tmp/`) and are never committed or published. Cropped illustrations are included
+in this private project for the family's own device builds only; they must not
+be redistributed (see `docs/nature-canonical-manifest.json` rights note).
+
+## Canonical source
+
+| Field | Value |
+| --- | --- |
+| File (private) | `.pane/prompts/environment-source.pdf` |
+| SHA-256 | `b464cf60de0edb2bac6d24148d6adaf868c66c7dbd34dd0a30dd9c7e82fa01e4` |
+| Size / pages | 69,911,526 bytes / 15 spreads |
+| Page image | one embedded JPEG per page, 3510×5100, rotation 0 (scanned sideways) |
+| Upright orientation | rotate 90° clockwise (parent-verified previews; agent cross-checked, meanAbsDiff ≈ 3/255) |
+| Printed pages covered | 4–33 (non-chronological PDF order; map in `docs/nature-canonical-manifest.json`) |
+
+## Crop pipeline (reproducible)
+
+`tools/nature-crops/build_nature_crops.py` (see `tools/nature-crops/README.md`):
+
+1. verify source PDF SHA-256;
+2. `pdfimages -j` lossless extraction of the page's original embedded JPEG;
+3. crop the human-approved upright box (crop-then-rotate transform, proven
+   pixel-identical by `--self-test`);
+4. downscale to ≤700 px long edge (LANCZOS, never upscale);
+5. baseline JPEG quality 90, 4:2:2, optimized;
+6. provenance JSON (source page hash, boxes, before/after hashes, sizes) into
+   `tmp/verify/environment/asset-work/provenance/`, plus a labeled contact sheet.
+
+Boxes live in `tools/nature-crops/crop-manifest.json` and must be approved and
+visually verified by a human (root/Agy) using the grid aids in
+`tmp/verify/environment/asset-work/grid/` — the current agent cannot view
+images, so no bounds were auto-chosen and `drawable-nodpi` is unchanged until
+that approval step completes.
+
+## Species → source page
+
+20 replacements (printed 10–13 = PDF 14–15; original pack, same filenames;
+old crops were 129–417 px long edge, 318 KiB total — see
+`tools/nature-crops/before-inventory-2aaed08.json`):
+
+| Printed page | Species (ids) |
+| --- | --- |
+| 10 | paivankakkara, pietaryrtti, koiranputki, vuohenputki, siankarsamo, pujo |
+| 11 | pihatatar, pihasaunio, kissankello, harakankello, niittyleinikki, maitohorsma |
+| 12 | heinasirkka, hepokatti, kastemato, leppakerttu |
+| 13 | sitruunaperhonen, amiraaliperhonen, kimalainen, kontiainen |
+
+24 additions (printed 18–19 = PDF 1, 24–25 = PDF 4, 28–29 = PDF 6; IDs match
+`docs/nature-content-pages-18-33.json`):
+
+| Printed page | Species (ids) |
+| --- | --- |
+| 18 | kuusi, manty, kataja, pihlaja |
+| 19 | rauduskoivu, hieskoivu, haapa, harmaaleppa |
+| 24 | metsamyyra, metsajanis, hirvi, valkohantakauris |
+| 25 | mayra, kettu, ilves, susi |
+| 28 | metso, teeri, kapytikka, huuhkaja |
+| 29 | peippo, rakattirastas, homotiainen, hippiainen |
+
+Crop rules: only the species' own art — no names, captions, card numbers, page
+furniture, or neighboring art (answer leakage); complete anatomy (antennae,
+tails, leaves); trees may include their leaf/cone detail art when it belongs to
+the same illustration region. New resources are named `nature_<id>.jpg` with the
+ASCII ids above.
+
+## Verification status and limits
+
+- Agent-side (done): source hash verified; page/size checks; rotation
+  cross-checked against parent-verified previews; transform self-test; grid aids
+  and non-semantic candidate hints generated for the human pass.
+- Human-side (pending, required): approve 44 boxes; inspect contact sheet and
+  native-pixel samples; then set `verifiedByHuman` in the manifest. Automated
+  shape checks are not semantic verification.
