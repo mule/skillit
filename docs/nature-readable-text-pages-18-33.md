@@ -12,7 +12,7 @@ Kirjassa esitellään kahdeksan puulajia: **kuusi, mänty, kataja, pihlaja, raud
 - **Pihlaja:** lehdet muodostuvat useasta lehdykästä; syksyllä punaiset marjat.
 - **Rauduskoivu:** kolmiomaiset, kaksinkertaisesti sahalaitaiset lehdet.
 - **Hieskoivu:** pyöreämmät, kerran sahalaitaiset lehdet; esiintyy usein kosteilla paikoilla.
-- **Haapa:** pyöreähköt, helposti tuulessa liikkuvat lehdet.
+- **Haapa:** pyöreät, mutkalaitaiset lehdet ja pehmeä puu, johon tikkojen on helppo tehdä pesäkolonsa.
 - **Harmaaleppä:** harmaa runko, suipot lehdet ja kosteiden kasvupaikkojen suosiminen.
 
 ## Sivut 20–21: Metsissä kasvatetaan puita
@@ -43,7 +43,7 @@ Kuvissa ovat **metso, teeri, käpytikka, huuhkaja, peippo, räkättirastas, höm
 
 ## Sivut 30–31: Hyönteiset ja hämähäkit ovat selkärangattomia
 
-Metsässä on runsaasti pieniä selkärangattomia eläimiä. Hyönteisillä on kuusi jalkaa ja hämähäkeillä kahdeksan. Muurahaiset elävät yhdyskunnissa, joissa on eri tehtäviä hoitavia yksilöitä. Kuvissa näkyvät muun muassa **hirvikärpänen, hyttynen, muurahainen, sarvijäärä, maasiira, tuhatjalkainen, sukkulamato ja kastemato**. Muurahaisten yhteiselämä ja hämähäkkien saalistustapa ovat keskeisiä esimerkkejä.
+Metsässä on runsaasti pieniä selkärangattomia eläimiä. Hyönteisillä on kuusi jalkaa ja hämähäkeillä kahdeksan. Muurahaiset elävät yhdyskunnissa, joissa on eri tehtäviä hoitavia yksilöitä. Kuvissa näkyvät muun muassa **hirvikärpänen, hyttynen, muurahainen, sarvijaakko, maasiira, tuhatjalkainen, sukkulamato ja kastemato**. Muurahaisten yhteiselämä ja hämähäkkien saalistustapa ovat keskeisiä esimerkkejä.
 
 ## Sivut 32–33: Ravintoketju alkaa kasveista
 

@@ -36,7 +36,7 @@
       "pdfPage": 11,
       "title": "Suomessa on monenlaisia elinympäristöjä",
       "topic": "elinympäristöt",
-      "status": "existing-notes"
+      "status": "active-in-app"
     },
     {
       "printedPages": [
@@ -46,7 +46,7 @@
       "pdfPage": 12,
       "title": "Eliökunnan luokittelu",
       "topic": "eliökunta",
-      "status": "existing-notes"
+      "status": "active-in-app"
     },
     {
       "printedPages": [
@@ -56,7 +56,7 @@
       "pdfPage": 13,
       "title": "Niityt, pihat ja pientareet ovat valoisia kasvupaikkoja",
       "topic": "niitty ja pölytys",
-      "status": "existing-notes"
+      "status": "active-in-app"
     },
     {
       "printedPages": [
@@ -66,7 +66,7 @@
       "pdfPage": 14,
       "title": "Niityn ja pientareen kasveja",
       "topic": "kasvilajit",
-      "status": "existing-species"
+      "status": "active-in-app"
     },
     {
       "printedPages": [
@@ -76,7 +76,7 @@
       "pdfPage": 15,
       "title": "Niityn ja pientareen eläimiä",
       "topic": "eläinlajit",
-      "status": "existing-species"
+      "status": "active-in-app"
     },
     {
       "printedPages": [
@@ -86,7 +86,7 @@
       "pdfPage": 9,
       "title": "Suomi on metsäinen ja soinen maa",
       "topic": "suot ja metsät",
-      "status": "new-canonical-summary"
+      "status": "active-in-app"
     },
     {
       "printedPages": [
@@ -96,7 +96,7 @@
       "pdfPage": 10,
       "title": "Puut kasvavat korkeiksi",
       "topic": "puun rakenne ja kasvu",
-      "status": "new-canonical-summary"
+      "status": "active-in-app"
     },
     {
       "printedPages": [
@@ -106,7 +106,7 @@
       "pdfPage": 1,
       "title": "Puita",
       "topic": "puulajit",
-      "status": "new-structured-species"
+      "status": "active-in-app"
     },
     {
       "printedPages": [
@@ -116,7 +116,7 @@
       "pdfPage": 2,
       "title": "Metsissä kasvatetaan puita",
       "topic": "metsänhoito",
-      "status": "new-concepts"
+      "status": "active-in-app"
     },
     {
       "printedPages": [
@@ -126,7 +126,7 @@
       "pdfPage": 3,
       "title": "Metsän nisäkkäitä",
       "topic": "nisäkkäät",
-      "status": "new-concepts"
+      "status": "active-in-app"
     },
     {
       "printedPages": [
@@ -136,7 +136,7 @@
       "pdfPage": 4,
       "title": "Metsän nisäkkäitä",
       "topic": "nisäkäslajit ja jäljet",
-      "status": "new-structured-species"
+      "status": "active-in-app"
     },
     {
       "printedPages": [
@@ -146,7 +146,7 @@
       "pdfPage": 5,
       "title": "Metsän lintuja",
       "topic": "lintujen elintavat",
-      "status": "new-concepts"
+      "status": "active-in-app"
     },
     {
       "printedPages": [
@@ -156,7 +156,7 @@
       "pdfPage": 6,
       "title": "Metsän lintuja",
       "topic": "lintulajit",
-      "status": "new-structured-species"
+      "status": "active-in-app"
     },
     {
       "printedPages": [
@@ -166,7 +166,7 @@
       "pdfPage": 7,
       "title": "Hyönteiset ja hämähäkit ovat selkärangattomia",
       "topic": "selkärangattomat",
-      "status": "new-concepts"
+      "status": "active-in-app"
     },
     {
       "printedPages": [
@@ -176,7 +176,7 @@
       "pdfPage": 8,
       "title": "Ravintoketju alkaa kasveista",
       "topic": "ravintoketjut",
-      "status": "new-concepts"
+      "status": "active-in-app"
     }
   ],
   "coverage": {
@@ -186,10 +186,10 @@
     "notes": "44 = 20 existing in Kotlin + 24 new JSON records; not 44 new Android species. The source is 15 spreads in a non-chronological PDF order."
   },
   "validation": {
-    "pageOrder": "verified visually against uploaded 15-page PDF",
-    "chapterHeadings": "verified visually",
-    "text": "paraphrased; not a full verified OCR transcription",
-    "speciesDetails": "require individual fact-checking before child-facing release",
-    "artwork": "not added to public GitHub repository"
+    "pageOrder": "AI visual audit of the 15-page PDF",
+    "chapterHeadings": "AI visual audit",
+    "text": "app text is own-words summary, not a transcription",
+    "speciesDetails": "AI source audit; see docs/nature-answer-key-review.md; no human approval claimed",
+    "artwork": "44 crops committed locally; see docs/nature-image-sources.md; redistribution rights unconfirmed; review before any publication"
   }
 }

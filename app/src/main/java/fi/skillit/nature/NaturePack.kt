@@ -60,7 +60,7 @@ object NaturePack {
         NatureSpecies("leppakerttu", "leppäkerttu", "eläin", R.drawable.nature_leppakerttu,
             "Punaisissa peitinsiivissä on mustia pilkkuja.", "Leppäkerttu syö kirvoja ja punkkeja.", 12),
         NatureSpecies("sitruunaperhonen", "sitruunaperhonen", "eläin", R.drawable.nature_sitruunaperhonen,
-            "Keltaiset siivet muistuttavat lehtiä.", "Sitruunaperhonen on perhonen, jonka kuvassa siivet ovat keltaiset.", 13),
+            "Keltaiset siivet; talvehtii Suomessa.", "Sitruunaperhoset talvehtivat Suomessa ja imevät ravinnokseen kukkien mettä.", 13),
         NatureSpecies("amiraaliperhonen", "amiraaliperhonen", "eläin", R.drawable.nature_amiraaliperhonen,
             "Tummissa siivissä on oranssinpunainen kuvio.", "Amiraaliperhonen lentää talveksi etelään.", 13),
         NatureSpecies("kimalainen", "kimalainen", "eläin", R.drawable.nature_kimalainen,
@@ -115,13 +115,15 @@ object NaturePack {
         add(rotatedConceptQuestions.last())
     }
 
-    /** All fifteen book spreads, printed pages 4–33, including content awaiting validation. */
-    internal val stagedChapters: List<NatureChapter> =
-        natureChapters(species + NatureStaging.species, questions + NatureStaging.questions)
+    val forestSpecies: List<NatureSpecies> = ForestContent.species
 
-    /** What the child can open. Pages 4–13 reuse the questions above. */
-    val chapters: List<NatureChapter> = activeChapters(stagedChapters, NatureStaging.approvedChapterIds,
-        questions.map { it.id }.toSet() + NatureStaging.approvedQuestionIds)
+    /** Every book spread and question, before the approval gate. */
+    internal val allChapters: List<NatureChapter> =
+        natureChapters(species + forestSpecies, questions + ForestContent.questions)
+
+    /** What the child can open: printed pages 4–33. Pages 4–13 reuse the questions above. */
+    val chapters: List<NatureChapter> = activeChapters(allChapters, ForestContent.approvedChapterIds,
+        questions.map { it.id }.toSet() + ForestContent.approvedQuestionIds)
 
     /** The original meadow trip, kept as one continuous round. */
     val trip = NatureChapter("niittyetsiva", "Niittyetsivä", 4, 13, emptyList(), emptyList(), species, questions)

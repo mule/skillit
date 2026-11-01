@@ -8,9 +8,9 @@ The `music-grade4-fi` pack is original content based on the topics in issues #1�
 The three original worksheets were unavailable; this pack has **not** been compared
 with them. M2 adds offline audio, interactive rhythm practice and a four-island map. M3 mastery and parent tools remain deferred.
 
-Ympäristöoppi is a separate, offline subject based on the user's Finnish environmental studies textbook. A chapter list opens each book spread with a short own-words summary, species cards and a practice round. The original 27-question Niittyetsivä trip stays available unchanged. Nature rounds are not saved and do not change Nuottiseikkailu saves or XP.
+Ympäristöoppi is a separate, offline subject based on the user's Finnish environmental studies textbook. A chapter list opens each book spread with a short own-words summary, illustrated species cards and a practice round. The original 27-question Niittyetsivä trip stays available unchanged. Nature rounds are not saved and do not change Nuottiseikkailu saves or XP.
 
-Only printed pages 4–13, which were read from the supplied photos, are active. Pages 14–33 are staged in `NatureChapters.kt` and stay hidden until validated against the book or an authoritative source; enabling them means adding IDs to the two sets in `NatureStaging`. See `docs/nature-answer-key-review.md` for the reviewed key and open questions, and `docs/nature-complete-source-index.md` for the page map. The textbook's illustration rights are unconfirmed; confirm the right to redistribute the crops before publishing a release.
+All 15 chapters for printed pages 4–33 are active, with 44 species and 73 questions. Content appears only when its IDs are listed in `ForestContent` in `NatureChapters.kt`. See `docs/nature-answer-key-review.md` for the source audit and `docs/nature-image-sources.md` for the crops. **Illustration redistribution rights are unconfirmed and this GitHub repository is public; review this before pushing the crops or publishing a release.**
 
 ## Build and install
 

@@ -18,9 +18,8 @@ Continuation of [pages 4–13](nature-source-pages-4-13.md) and the existing **N
 ## Structured content
 
 - `nature-content-pages-18-33.json`: 24 species records (8 trees, 8 mammals, 8 birds), 16 paraphrased concept prompts and a food-chain example, with source-page references.
-- Every species record names an optional crop `crops/<id>.jpg`, but **the images are not in this GitHub change**. A separate local export archive contains 26 image crops and unverified Finnish OCR text.
+- Every species record names its Android drawable. Crops come from the canonical scan; see `nature-image-sources.md`.
 - `sourcePage` always means the **printed book page**, not the PDF image number.
-- The 24 crop files are review assets, **not clean background-removed game illustrations**. Two further crops show the food-chain diagrams.
 
 ## Subject continuity and lesson design
 
@@ -35,7 +34,7 @@ Suggested future Niittyetsivä sections:
 5. **Kuusijalan jäljillä** – compare insect and spider body parts, plus the roles in an ant colony.
 6. **Ravintoketjun rakentaja** – build apila → metsäjänis → ilves, then discuss decomposers.
 
-These are **content suggestions**, not implemented Android game screens or final questions.
+These were content suggestions. The app implements chapter reading and practice, not these separate game modes.
 
 ## Accuracy and licensing
 

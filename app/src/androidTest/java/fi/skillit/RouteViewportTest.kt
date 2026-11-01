@@ -149,4 +149,19 @@ class RouteViewportTest {
         capture("environment-back-to-list")
         compose.onNodeWithText("Valitse luku. Voit lukea ja harjoitella omaan tahtiisi.").assertIsDisplayed()
     }
+
+    @Test fun lastChapterIsReachableAndItsRoutesRevealTheirContent() {
+        seed(SavedProgress())
+        enterFromScrolledMap("Ympäristöoppi · luontoretket")
+        compose.waitUntilAtLeastOneExists(hasText("Ravintoketju alkaa kasveista"), 10_000)
+        compose.onNodeWithText("Ravintoketju alkaa kasveista").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Valitse luku. Voit lukea ja harjoitella omaan tahtiisi.").assertIsNotDisplayed()
+        compose.onNodeWithText("Ravintoketju alkaa kasveista").performClick()
+        compose.waitUntilAtLeastOneExists(hasText("Kirjan sivut 32–33"), 10_000)
+        capture("environment-last-chapter")
+        compose.onNodeWithText("Kirjan sivut 32–33").assertIsDisplayed()
+        tap("Aloita harjoitus (5 tehtävää)")
+        compose.waitUntilAtLeastOneExists(hasText("Tehtävä 1/5 · 0 oikein"), 10_000)
+        compose.onNodeWithText("Tehtävä 1/5 · 0 oikein").assertIsDisplayed()
+    }
 }

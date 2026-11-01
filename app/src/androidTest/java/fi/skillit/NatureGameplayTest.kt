@@ -142,11 +142,61 @@ class NatureGameplayTest {
         compose.onNodeWithText("Kontiainen syö kastematoja ja toukkia.").assertExists()
     }
 
-    @Test fun contentAwaitingValidationCannotBeOpened() {
+    @Test fun everyBookChapterCanBeReachedFromTheList() {
         enterEnvironmentInOwnedViewport()
-        compose.waitUntilAtLeastOneExists(hasText("Eliökunnan luokittelu"), 10_000)
-        compose.onNodeWithText("Puita").assertDoesNotExist()
-        compose.onNodeWithText("Ravintoketju alkaa kasveista").assertDoesNotExist()
+        listOf(
+            "Suomessa on monenlaisia elinympäristöjä", "Eliökunnan luokittelu",
+            "Niityt, pihat ja pientareet ovat valoisia kasvupaikkoja", "Niityn ja pientareen kasveja",
+            "Niityn ja pientareen eläimiä", "Suomi on metsäinen ja soinen maa", "Puut kasvavat korkeiksi", "Puita",
+            "Metsissä kasvatetaan puita", "Metsän nisäkkäitä", "Metsän nisäkkäitä: lajikortit", "Metsän lintuja",
+            "Metsän lintuja: lajikortit", "Hyönteiset ja hämähäkit ovat selkärangattomia", "Ravintoketju alkaa kasveista",
+        ).forEach { title ->
+            compose.waitUntilAtLeastOneExists(hasText(title), 10_000)
+            compose.onNodeWithText(title).performScrollTo().assertIsDisplayed()
+        }
+    }
+
+    @Test fun newSpeciesRoundUsesPictureHintFeedbackAndAllowsAnotherTry() {
+        enterEnvironmentInOwnedViewport()
+        tap("Puita")
+        tap("Aloita harjoitus (8 tehtävää)")
+        waitForVisible("Mikä laji kuvassa on?")
+        val clue = "Lyhyet neulaset kasvavat oksalla yksittäin."
+        compose.onNodeWithContentDescription(clue).assertIsDisplayed()
+        compose.onNodeWithText(clue).assertDoesNotExist()
+        tap("Vihje")
+        compose.onNodeWithText(clue).assertExists()
+        tap("mänty")
+        compose.onNodeWithText("Oikea vastaus: kuusi").assertExists()
+        compose.onNodeWithText("Lähde: käyttäjän toimittama ympäristöopin sivu 18.").assertExists()
+        tap("Jatka")
+        listOf("mänty", "kataja", "pihlaja", "rauduskoivu", "hieskoivu", "haapa", "harmaaleppä").forEach { answer ->
+            tap(answer)
+            tap("Jatka")
+        }
+        waitForVisible("Tunnistit oikein 7/8 tehtävää. Voit tutkia lajeja uudelleen omaan tahtiisi.")
+        tap("Uusi retki")
+        waitForVisible("Tehtävä 1/8 · 0 oikein")
+        tap("kuusi")
+        compose.onNodeWithText("Oikein!").assertExists()
+    }
+
+    @Test fun lastChapterRoundEndsWithoutANextChapter() {
+        enterEnvironmentInOwnedViewport()
+        tap("Ravintoketju alkaa kasveista")
+        tap("Aloita harjoitus (5 tehtävää)")
+        listOf(
+            "apila → metsäjänis → ilves",
+            "Kasveista, jotka valmistavat ravintoa auringonvalon avulla.",
+            "Mihin suuntaan ravinto siirtyy eliöltä toiselle.",
+            "Kasveja tai niiden osia.",
+            "Hajottaa kuollutta eloperäistä ainesta; esimerkkejä ovat sienet ja bakteerit.",
+        ).forEach { answer ->
+            tap(answer)
+            tap("Jatka")
+        }
+        waitForVisible("Tunnistit oikein 5/5 tehtävää. Voit tutkia lajeja uudelleen omaan tahtiisi.")
+        compose.onNodeWithText("Seuraava luku", substring = true).assertDoesNotExist()
     }
 
     @Test fun chapterRoundGivesFeedbackAndLeadsToNextChapter() {

@@ -4,7 +4,7 @@
   "subject": "ympäristöoppi",
   "language": "fi",
   "source": {
-    "file": "20261101-105226.pdf",
+    "file": "Kokomatsku ympäristöoppi.pdf",
     "printedPages": [
       18,
       33
@@ -12,7 +12,7 @@
     "pdfPages": 8,
     "continuationOf": "finnish-nature-grade4-pages-4-13",
     "titleVisible": "Tutkitaan suomalaista luontoa",
-    "verified": "page themes and species names visually checked; summaries paraphrased; individual source facts require editorial review",
+    "verified": "AI source audit against the canonical scan; see docs/nature-answer-key-review.md. No human approval is claimed.",
     "rights": "User-supplied textbook scans. Artwork and full original text must not be redistributed without appropriate rights."
   },
   "species": [
@@ -23,8 +23,8 @@
       "sourcePage": 18,
       "clue": "Lyhyet neulaset kasvavat oksalla yksittäin.",
       "fact": "Kuusi menestyy varjossa ja riittävän kosteilla paikoilla.",
-      "sourceImage": "crops/kuusi.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_kuusi.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -34,8 +34,8 @@
       "sourcePage": 18,
       "clue": "Pitkät neulaset ovat pareittain ja latvus on usein rungon yläosassa.",
       "fact": "Mänty kestää kuivuutta, mutta tarvitsee runsaasti valoa.",
-      "sourceImage": "crops/manty.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_manty.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -45,8 +45,8 @@
       "sourcePage": 18,
       "clue": "Usein pensasmainen ja piikikäs, marjamaiset kävyt.",
       "fact": "Kataja kasvaa valoisilla kasvupaikoilla.",
-      "sourceImage": "crops/kataja.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_kataja.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -56,8 +56,8 @@
       "sourcePage": 18,
       "clue": "Lehdet koostuvat useista lehdyköistä; syksyllä punaisia marjoja.",
       "fact": "Pihlajan marjat ovat monen linnun ravintoa.",
-      "sourceImage": "crops/pihlaja.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_pihlaja.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -67,8 +67,8 @@
       "sourcePage": 19,
       "clue": "Lehti on kolmiomainen ja kahteen kertaan sahalaitainen.",
       "fact": "Rauduskoivu menestyy kuivemmilla paikoilla kuin hieskoivu.",
-      "sourceImage": "crops/rauduskoivu.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_rauduskoivu.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -78,8 +78,8 @@
       "sourcePage": 19,
       "clue": "Lehti on pyöreämpi ja vain kerran sahalaitainen.",
       "fact": "Hieskoivu kasvaa kosteilla kasvupaikoilla.",
-      "sourceImage": "crops/hieskoivu.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_hieskoivu.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -87,10 +87,10 @@
       "name": "haapa",
       "group": "puu",
       "sourcePage": 19,
-      "clue": "Pyöreähkö lehti ja vihertävänharmaa runko.",
-      "fact": "Haavan lehdet havisevat herkästi tuulessa.",
-      "sourceImage": "crops/haapa.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "clue": "Pyöreä ja mutkalaitainen lehti sekä vihertävänharmaa runko.",
+      "fact": "Haapa on pehmeää puuta, johon tikkojen on helppo tehdä pesäkolonsa.",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_haapa.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -100,8 +100,8 @@
       "sourcePage": 19,
       "clue": "Suipot lehdet ja harmaa runko.",
       "fact": "Harmaaleppä viihtyy usein kosteilla paikoilla.",
-      "sourceImage": "crops/harmaaleppa.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_harmaaleppa.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -109,10 +109,10 @@
       "name": "metsämyyrä",
       "group": "nisäkäs",
       "sourcePage": 24,
-      "clue": "Pieni ruskea jyrsijä, pitkä häntä.",
+      "clue": "Pieni ruskea jyrsijä, joka on Suomen yleisin nisäkäs.",
       "fact": "Metsämyyrä syö muun muassa kasvien osia ja marjoja.",
-      "sourceImage": "crops/metsamyyra.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_metsamyyra.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -122,8 +122,8 @@
       "sourcePage": 24,
       "clue": "Talvella valkoinen, kesällä ruskea turkki; pitkät takajalat.",
       "fact": "Metsäjänis syö kesällä heiniä ja talvella muun muassa puiden kuorta.",
-      "sourceImage": "crops/metsajanis.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_metsajanis.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -133,8 +133,8 @@
       "sourcePage": 24,
       "clue": "Pitkät jalat ja sorkat; koiraalla sarvet.",
       "fact": "Hirvi on kasvinsyöjä ja liikkuu myös soisessa maastossa.",
-      "sourceImage": "crops/hirvi.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_hirvi.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -144,8 +144,8 @@
       "sourcePage": 24,
       "clue": "Ruskea hirvieläin, jonka häntään liittyy selvä valkoinen alue.",
       "fact": "Valkohäntäkauris on Suomeen istutettu laji.",
-      "sourceImage": "crops/valkohantakauris.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_valkohantakauris.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -155,8 +155,8 @@
       "sourcePage": 25,
       "clue": "Mustavalkoiset kasvojuovat ja lyhyet jalat.",
       "fact": "Mäyrä tekee pesänsä maan alle ja on kaikkiruokainen.",
-      "sourceImage": "crops/mayra.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_mayra.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -166,8 +166,8 @@
       "sourcePage": 25,
       "clue": "Punertava turkki, suipot korvat ja tuuhea häntä.",
       "fact": "Kettu syö muun muassa pieniä nisäkkäitä.",
-      "sourceImage": "crops/kettu.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_kettu.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -177,8 +177,8 @@
       "sourcePage": 25,
       "clue": "Täplikäs turkki, lyhyt häntä ja korvatupsut.",
       "fact": "Ilves saalistaa esimerkiksi jäniksiä ja myyriä.",
-      "sourceImage": "crops/ilves.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_ilves.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -188,8 +188,8 @@
       "sourcePage": 25,
       "clue": "Suuri koiraeläin, harmaanruskea turkki.",
       "fact": "Sudet voivat elää laumassa omalla reviirillään.",
-      "sourceImage": "crops/susi.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_susi.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -199,8 +199,8 @@
       "sourcePage": 28,
       "clue": "Suuri metsäkanalintu; koiras tumma ja levittää pyrstönsä viuhkaksi.",
       "fact": "Metso syö vuodenajan mukaan muun muassa silmuja, marjoja ja neulasia.",
-      "sourceImage": "crops/metso.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_metso.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -210,8 +210,8 @@
       "sourcePage": 28,
       "clue": "Koiraalla tumma höyhenpuku ja lyyranmuotoinen pyrstö.",
       "fact": "Teerellä on kevättalvella ryhmäsoidin.",
-      "sourceImage": "crops/teeri.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_teeri.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -221,8 +221,8 @@
       "sourcePage": 28,
       "clue": "Mustavalkoinen tikka, jolla on punaista höyhenpuvussa.",
       "fact": "Käpytikka hakkaa nokallaan pesäkoloja puuhun.",
-      "sourceImage": "crops/kapytikka.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_kapytikka.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -232,8 +232,8 @@
       "sourcePage": 28,
       "clue": "Suuri ruskeankirjava pöllö, jolla on korvatupsut.",
       "fact": "Huuhkaja saalistaa usein öisin.",
-      "sourceImage": "crops/huuhkaja.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_huuhkaja.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -243,8 +243,8 @@
       "sourcePage": 29,
       "clue": "Koiraalla punertava rinta ja päässä siniharmaata; siivissä valkoiset juovat.",
       "fact": "Peippo syö siemeniä ja pieniä selkärangattomia.",
-      "sourceImage": "crops/peippo.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_peippo.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -254,8 +254,8 @@
       "sourcePage": 29,
       "clue": "Harmahtava pää, täplikäs rinta ja ruskeat siivet.",
       "fact": "Räkättirastas syö matoja, hyönteisiä ja marjoja.",
-      "sourceImage": "crops/rakattirastas.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_rakattirastas.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -265,8 +265,8 @@
       "sourcePage": 29,
       "clue": "Musta päälaki ja leukalappu, harmaa selkä.",
       "fact": "Hömötiainen liikkuu talvella usein tiaisparvissa.",
-      "sourceImage": "crops/homotiainen.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_homotiainen.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     },
     {
@@ -276,15 +276,15 @@
       "sourcePage": 29,
       "clue": "Hyvin pieni vihertävä lintu, jolla on päälaella värikäs juova.",
       "fact": "Hippiäinen syö hämähäkkejä ja hyönteisiä.",
-      "sourceImage": "crops/hippiainen.jpg",
-      "imageAvailability": "exported-in-local-companion-archive-not-committed",
+      "sourceImage": "app/src/main/res/drawable-nodpi/nature_hippiainen.jpg",
+      "imageAvailability": "committed-android-drawable",
       "provenance": "user-provided textbook scan; paraphrased"
     }
   ],
   "concepts": [
     {
       "id": "forest-renewal",
-      "sourcePage": 20,
+      "sourcePage": 21,
       "prompt": "Miksi metsään istutetaan puuntaimia?",
       "answer": "Jotta kaadettujen puiden tilalle kasvaisi uusia puita.",
       "tags": [
@@ -475,9 +475,8 @@
     }
   ],
   "images": {
-    "status": "companion-export-only",
-    "count": 26,
-    "archive": "skillit_nature_pages_18_33.zip",
-    "note": "24 species illustrations + 2 diagrams cropped for review, NOT committed to the public repository."
+    "status": "committed-android-drawables",
+    "count": 24,
+    "note": "Species crops from the canonical scan; see docs/nature-image-sources.md. Redistribution rights are unconfirmed."
   }
 }

@@ -26,8 +26,8 @@ The canonical source is the user's **Kokomatsku ympäristöoppi.pdf**, 15 scanne
 - Pages 14–17 are summarized in `nature-readable-text-pages-14-17.md`.
 - Pages 18–33 have 24 structured species records, 16 original concept prompts and reading notes.
 - `nature-canonical-manifest.json` is the unified machine-readable index. It references the existing pack rather than duplicating IDs or changing saved gameplay.
-- App status (updated on branch `feat/environmental-studies`): chapters for printed pages 4–13 are active. Pages 14–33 are staged in `NatureChapters.kt` and are not shown to the child until validated; see `nature-answer-key-review.md`. No new APK assets or runtime content loader were added.
+- App status: all 15 chapters are active, with 44 species and 73 questions. Text is in `NaturePack.kt` and `NatureChapters.kt`, images in `drawable-nodpi`. See `nature-answer-key-review.md`. There is no runtime content loader.
 
 ## Editorial and licensing gate
 
-The scan is not machine-readable text. Existing notes and new content are **paraphrases**, not full verified OCR. Individual measurements, habitat details and exercise wording must be reviewed against the corresponding PDF page before they are used as definitive study answers. Original textbook images and full text are not committed to this public repository; check rights before publishing or distributing them.
+The scan is not machine-readable text. App content was checked by an AI source audit (`nature-answer-key-review.md`); no human approval is claimed. Original textbook images and full scans carry unconfirmed redistribution rights: the full scans stay in ignored paths, and the rights to the committed crops must be reviewed before any publication.

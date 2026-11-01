@@ -3,9 +3,10 @@
 Records where each species JPEG in `app/src/main/res/drawable-nodpi/` comes from
 and how it is produced. The scanned textbook is user-provided and private: the
 PDF, full-page renders, and OCR text stay in gitignored paths (`.pane/`,
-`tmp/`) and are never committed or published. Cropped illustrations are included
-in this private project for the family's own device builds only; they must not
-be redistributed (see `docs/nature-canonical-manifest.json` rights note).
+`tmp/`) and are never committed or published. Cropped illustrations are committed for the
+family's own device builds. **The GitHub repository `mule/skillit` is public**, so
+pushing these commits would publish the crops. Redistribution rights are unconfirmed;
+review this before any push or release (see `docs/nature-canonical-manifest.json`).
 
 ## Canonical source
 

@@ -4,9 +4,9 @@
 
 ## Sivut 14–15 — Suomi on metsäinen ja soinen maa
 
-Suomessa on paljon metsiä ja soita. Suolla maaperä on märkä, ja kuolleita kasvien osia kertyy turpeeksi. Suon kasveihin kuuluvat esimerkiksi rahkasammalet ja suomarjat. Kirjan kuvassa erotellaan suon eri osia ja niiden kasvillisuutta. Suot ovat monien kasvien ja eläinten elinympäristöjä.
+Metsä on Suomen yleisin elinympäristö, ja yleisimmät puut ovat mänty, kuusi ja koivu. Suolla on enemmän vettä kuin metsässä, ja sen yleisin sammal on rahkasammal. Rahkasammalen kuolleesta alaosasta tulee turvetta. Sivun 15 kuva näyttää, miten lampi kasvaa umpeen. (Korjattu skannauksesta: kirjassa ei ole suotyyppejä tai sanaa suomarjat.)
 
-**Käsitteet:** suo, turve, rahkasammal, räme, korpi, avosuo.
+**Käsitteet:** metsä, havupuu, lehtipuu, suo, sammal, rahkasammal, turve.
 
 **Aineistoon perustuvat harjoitusideat:**
 - Miksi suo on märkä kasvupaikka?
@@ -15,9 +15,9 @@ Suomessa on paljon metsiä ja soita. Suolla maaperä on märkä, ja kuolleita ka
 
 ## Sivut 16–17 — Puut kasvavat korkeiksi
 
-Kirjan kuvassa verrataan mäntyä ja kuusta. Puun osat ovat **juuret, runko ja latvus**. Männyllä neulaset kasvavat pareittain, kuusella yksittäin. Puut kasvavat pituutta ja paksuutta; rungon poikkileikkauksessa näkyvät vuosirenkaat. Puu tarvitsee kasvaakseen valoa, vettä ja ravinteita. Havupuut ovat neulasellisia puita.
+Kirjan kuvassa verrataan mäntyä ja kuusta. Puulla on kolme osaa kuten muillakin kasveilla: **juuret, varsi ja lehdet**. Puun vartta sanotaan rungoksi; sen alaosa on tyvi ja yläosa latva, ja kuori peittää runkoa ja oksia. Havupuiden lehdet ovat neulasia. Kannon vuosirenkaista voi laskea puun iän. (Korjattu skannauksesta. Neulasten kasvutapa on sivun 18 lajikorteissa.)
 
-**Käsitteet:** juuret, runko, latvus, neulaset, käpy, vuosirengas.
+**Käsitteet:** juuret, varsi, lehdet, ravinteet, runko, tyvi, latva, kuori, neulaset, kanto, vuosirenkaat.
 
 **Aineistoon perustuvat harjoitusideat:**
 - Nimeä puun osat.
@@ -26,4 +26,4 @@ Kirjan kuvassa verrataan mäntyä ja kuusta. Puun osat ovat **juuret, runko ja l
 
 ## Tarkistustila
 
-Otsikot, sivut ja kuvituksen pääaiheet on tarkistettu skannauksesta. Tarkat mitat, sanamuodot ja kaikki painetut tehtävät eivät ole tässä transkriptiossa. Käytä alkuperäistä skannausta tarkistukseen, jos niistä tehdään uusia kysymyksiä.
+Sisältö on tarkistettu skannauksesta (katso `nature-answer-key-review.md`). Tämä on kooste, ei sanatarkka transkriptio.
