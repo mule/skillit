@@ -1,5 +1,7 @@
 package fi.skillit
 
+import android.os.SystemClock
+import android.view.KeyEvent
 import androidx.compose.ui.test.assertIsDisplayed
 import android.graphics.Bitmap
 import androidx.test.platform.app.InstrumentationRegistry
@@ -26,7 +28,8 @@ class NatureGameplayTest {
         val repository = ProgressRepository(compose.activity.applicationContext.skillitDataStore)
         runBlocking { repository.reset(muted = false) }
         compose.activityRule.scenario.recreate()
-        tap("Niittyetsivä · luontoretki")
+        tap("Ympäristöoppi · luontoretket")
+        tap("Niittyetsivä")
     }
 
     private fun tap(label: String) {
@@ -77,7 +80,8 @@ class NatureGameplayTest {
             compose.onNodeWithText(label).performScrollTo().performClick()
         }
 
-        tap("Niittyetsivä · luontoretki")
+        tap("Ympäristöoppi · luontoretket")
+        tap("Niittyetsivä")
         compose.onNodeWithContentDescription(NaturePack.species.first().clue).assertExists()
         tap("Vihje")
         compose.onNodeWithText(NaturePack.species.first().clue).assertExists()
@@ -93,5 +97,87 @@ class NatureGameplayTest {
         tap("Etusivu")
         compose.onNodeWithText("Aloita seikkailu").assertExists()
         assertTrue(runBlocking { repository.load().events.isEmpty() })
+    }
+
+    private fun enterClassificationChapter() {
+        val repository = ProgressRepository(compose.activity.applicationContext.skillitDataStore)
+        runBlocking { repository.reset(muted = false) }
+        compose.activityRule.scenario.recreate()
+        tap("Ympäristöoppi · luontoretket")
+        tap("Eliökunnan luokittelu")
+    }
+
+    private fun systemBack() {
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        val downTime = SystemClock.uptimeMillis()
+        assertTrue(automation.injectInputEvent(KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK, 0), true))
+        assertTrue(automation.injectInputEvent(KeyEvent(downTime, SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK, 0), true))
+        compose.waitForIdle()
+    }
+
+    @Test fun chapterShowsReadingBeforePractice() {
+        enterClassificationChapter()
+        compose.onNodeWithText("Kirjan sivut 6–7").assertExists()
+        compose.onNodeWithText("Eliöitä ovat eläimet, kasvit, sienet, alkueliöt ja bakteerit.").assertExists()
+        compose.onNodeWithText("Aloita harjoitus (2 tehtävää)").assertExists()
+    }
+
+    @Test fun speciesChapterReadingShowsItsCards() {
+        val repository = ProgressRepository(compose.activity.applicationContext.skillitDataStore)
+        runBlocking { repository.reset(muted = false) }
+        compose.activityRule.scenario.recreate()
+        tap("Ympäristöoppi · luontoretket")
+        tap("Niityn ja pientareen eläimiä")
+        compose.onNodeWithText("kontiainen").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Kontiainen syö kastematoja ja toukkia.").assertExists()
+    }
+
+    @Test fun contentAwaitingValidationCannotBeOpened() {
+        val repository = ProgressRepository(compose.activity.applicationContext.skillitDataStore)
+        runBlocking { repository.reset(muted = false) }
+        compose.activityRule.scenario.recreate()
+        tap("Ympäristöoppi · luontoretket")
+        compose.onNodeWithText("Eliökunnan luokittelu").assertExists()
+        compose.onNodeWithText("Puita").assertDoesNotExist()
+        compose.onNodeWithText("Ravintoketju alkaa kasveista").assertDoesNotExist()
+    }
+
+    @Test fun chapterRoundGivesFeedbackAndLeadsToNextChapter() {
+        enterClassificationChapter()
+        tap("Aloita harjoitus (2 tehtävää)")
+        compose.onNodeWithText("Mihin eliökuntaan sieni kuuluu?").assertExists()
+        tap("kasveihin")
+        compose.onNodeWithText("Oikea vastaus: sieniin").assertExists()
+        compose.onNodeWithText("Lähde: käyttäjän toimittama ympäristöopin sivu 6.").assertExists()
+        tap("Jatka")
+        tap("sammakkoeläimiin")
+        compose.onNodeWithText("Oikein!").assertExists()
+        tap("Jatka")
+        compose.onNodeWithText("Tunnistit oikein 1/2 tehtävää. Voit tutkia lajeja uudelleen omaan tahtiisi.").assertExists()
+        tap("Seuraava luku: Niityt, pihat ja pientareet ovat valoisia kasvupaikkoja")
+        compose.onNodeWithText("Kirjan sivut 8–9").assertExists()
+    }
+
+    @Test fun backStepsFromPracticeToReadingToListToHome() {
+        enterClassificationChapter()
+        tap("Aloita harjoitus (2 tehtävää)")
+        compose.waitUntilAtLeastOneExists(hasText("Mihin eliökuntaan sieni kuuluu?"), 10_000)
+        systemBack()
+        compose.waitUntilAtLeastOneExists(hasText("Kirjan sivut 6–7"), 10_000)
+        systemBack()
+        compose.waitUntilAtLeastOneExists(hasText("Valitse luku. Voit lukea ja harjoitella omaan tahtiisi."), 10_000)
+        systemBack()
+        compose.waitUntilAtLeastOneExists(hasText("Ympäristöoppi · luontoretket"), 10_000)
+    }
+
+    @Test fun chapterPracticeSurvivesRecreationAndLeavesMusicSaveUntouched() {
+        enterClassificationChapter()
+        tap("Aloita harjoitus (2 tehtävää)")
+        tap("kasveihin")
+        compose.activityRule.scenario.recreate()
+        compose.waitUntilAtLeastOneExists(hasText("Oikea vastaus: sieniin"), 10_000)
+        val repository = ProgressRepository(compose.activity.applicationContext.skillitDataStore)
+        val saved = runBlocking { repository.load() }
+        assertTrue(saved.events.isEmpty() && saved.practice.isEmpty())
     }
 }

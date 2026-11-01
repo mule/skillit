@@ -6,7 +6,7 @@ data class NatureSpecies(
     val id: String,
     val name: String,
     val group: String,
-    val illustration: Int,
+    val illustration: Int?,
     val clue: String,
     val fact: String,
     val sourcePage: Int,
@@ -34,7 +34,7 @@ object NaturePack {
         NatureSpecies("koiranputki", "koiranputki", "kasvi", R.drawable.nature_koiranputki,
             "Valkoisessa kukinnossa on paljon pieniä kukkia.", "Koiranputki on korkea niitty- ja pientarekasvi.", 10),
         NatureSpecies("vuohenputki", "vuohenputki", "kasvi", R.drawable.nature_vuohenputki,
-            "Valkoisten kukkien alla on koiranputkea leveämmät lehdet.", "Vuohenputki leviää voimakkaasti.", 10),
+            "Valkoisten kukkien alla on koiranputkea ehyemmät lehdet.", "Vuohenputki leviää voimakkaasti.", 10),
         NatureSpecies("siankarsamo", "siankärsämö", "kasvi", R.drawable.nature_siankarsamo,
             "Tukevan varren päässä on paljon valkoisia kukkia.", "Siankärsämö kukkii heinä–syyskuussa.", 10),
         NatureSpecies("pujo", "pujo", "kasvi", R.drawable.nature_pujo,
@@ -114,4 +114,17 @@ object NaturePack {
         }
         add(rotatedConceptQuestions.last())
     }
+
+    /** All fifteen book spreads, printed pages 4–33, including content awaiting validation. */
+    internal val stagedChapters: List<NatureChapter> =
+        natureChapters(species + NatureStaging.species, questions + NatureStaging.questions)
+
+    /** What the child can open. Pages 4–13 reuse the questions above. */
+    val chapters: List<NatureChapter> = activeChapters(stagedChapters, NatureStaging.approvedChapterIds,
+        questions.map { it.id }.toSet() + NatureStaging.approvedQuestionIds)
+
+    /** The original meadow trip, kept as one continuous round. */
+    val trip = NatureChapter("niittyetsiva", "Niittyetsivä", 4, 13, emptyList(), emptyList(), species, questions)
+
+    fun chapter(id: String): NatureChapter? = if (id == trip.id) trip else chapters.firstOrNull { it.id == id }
 }

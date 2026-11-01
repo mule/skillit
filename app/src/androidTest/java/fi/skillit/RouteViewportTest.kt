@@ -124,4 +124,17 @@ class RouteViewportTest {
         capture("practice-back")
         compose.onNodeWithText("Nuottiseikkailu").assertIsDisplayed()
     }
+
+    @Test fun environmentRoutesRevealTheirHeadingsWithoutScrolling() {
+        seed(SavedProgress())
+        enterFromScrolledMap("Ympäristöoppi · luontoretket")
+        capture("environment-list")
+        compose.onNodeWithText("Valitse luku. Voit lukea ja harjoitella omaan tahtiisi.").assertIsDisplayed()
+        tap("Niityn ja pientareen eläimiä")
+        capture("environment-reading")
+        compose.onNodeWithText("Kirjan sivut 12–13").assertIsDisplayed()
+        tap("Aloita harjoitus (8 tehtävää)")
+        capture("environment-practice")
+        compose.onNodeWithText("Mikä laji kuvassa on?").assertIsDisplayed()
+    }
 }

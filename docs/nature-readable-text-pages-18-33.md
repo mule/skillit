@@ -1,6 +1,6 @@
 # Ympäristöoppi: sivujen 18–33 luettava sisältö (muotoiltu)
 
-Tämä on käyttäjän toimittaman kahdeksan aukeaman PDF-skannauksen **uudelleen muotoiltu ja tiivistetty** suomenkielinen sisältö, ei sanatarkka kopio eikä tarkistettu täysteksti. Kirjan painetut sivunumerot ovat 18–33. Aiempi vastaava aineisto: [sivut 4–13](nature-readable-text-fi.md). Sivujen 14–17 materiaali ei sisälly tähän PDF:ään.
+Tämä on käyttäjän toimittaman kahdeksan aukeaman PDF-skannauksen **uudelleen muotoiltu ja tiivistetty** suomenkielinen sisältö, ei sanatarkka kopio eikä tarkistettu täysteksti. Kirjan painetut sivunumerot ovat 18–33. Aiempi vastaava aineisto: [sivut 4–13](nature-readable-text-fi.md). Sivut 14–17 ovat täydessä PDF:ssä, ja niiden tiivistelmä on tiedostossa [sivut 14–17](nature-readable-text-pages-14-17.md). (Korjattu haarassa `feat/environmental-studies`: aiempi lause koski vain ensimmäistä kahdeksan aukeaman PDF:ää.)
 
 ## Sivut 18–19: Puita
 

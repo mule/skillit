@@ -168,7 +168,7 @@ fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null) {
                             Text(if (adventure?.complete == true) "Katso seikkailun tulos" else if (saved.started) "Jatka seikkailua" else "Aloita seikkailu")
                         }
                         Button(onClick = { rhythm = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Rytmipaja") }
-                        Button(onClick = { nature = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Niittyetsivä · luontoretki") }
+                        Button(onClick = { nature = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Ympäristöoppi · luontoretket") }
                         SoundLab(audio, saved.muted || saved.volume == 0f)
                     }
                     session != null && session.complete -> {

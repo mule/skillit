@@ -33,13 +33,13 @@ Finnish names and measurements below follow the printed cards. A dash means the 
 | 11 | harakankello | 20–70 cm | kesä–heinäkuu | Violet bell-shaped flowers turn toward sun and droop in rain. |
 | 11 | niittyleinikki | 10–60 cm | kesä–syyskuu | Yellow flowers; mildly poisonous plant. |
 | 11 | maitohorsma | 50–150 cm | kesä–elokuu | Purple-red flowers and narrow pointed leaves; leaves contain vitamin C. |
-| 12 | heinäsirkka | 2–3 cm | Plants | Egg → nymph → adult; jumps about half a metre using hind legs. |
-| 12 | hepokatti | 3–4 cm | Insects | Egg → nymph → adult; larger than heinäsirkka and has long antennae. |
+| 12 | heinäsirkka | 2–3 cm | Plants | Egg → larva ("toukka") → adult; jumps about half a metre using hind legs. |
+| 12 | hepokatti | 3–4 cm | Insects | Egg → larva ("toukka") → adult; larger than heinäsirkka and has long antennae. |
 | 12 | kastemato | 10–30 cm | Fallen leaves and dead plants in soil | Lives mostly underground; often reaches surface in rain. |
 | 12 | leppäkerttu | 5 mm | Aphids, mites, small insects | Bad taste and colour warn predators. |
 | 13 | sitruunaperhonen | 5 cm wingspan | Flower nectar; rest obscured | Yellow illustration; other text partly obscured by glare. |
 | 13 | amiraaliperhonen | 5 cm wingspan | Flower nectar and tree sap | Flies south for winter. |
-| 13 | kimalainen | 1–2 cm | Nectar and pollen | Queen lays eggs in wax cells; only queens survive winter. |
+| 13 | kimalainen | 1–2 cm | Nectar and pollen | Female lays eggs in wax cells; only females survive winter. |
 | 13 | kontiainen | 10–15 cm | Earthworms and larvae | Shovel-like forelegs dig underground; formerly called maamyyrä. |
 
 ## Printed exercises
