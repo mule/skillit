@@ -1,6 +1,13 @@
 package fi.skillit
 
+import android.os.SystemClock
+import android.view.KeyEvent
+import androidx.activity.compose.setContent
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertWidthIsEqualTo
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.unit.dp
 import android.graphics.Bitmap
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.File
@@ -26,7 +33,8 @@ class NatureGameplayTest {
         val repository = ProgressRepository(compose.activity.applicationContext.skillitDataStore)
         runBlocking { repository.reset(muted = false) }
         compose.activityRule.scenario.recreate()
-        tap("Niittyetsivä · luontoretki")
+        tap("Ympäristöoppi · luontoretket")
+        tap("Niittyetsivä")
     }
 
     private fun tap(label: String) {
@@ -77,7 +85,8 @@ class NatureGameplayTest {
             compose.onNodeWithText(label).performScrollTo().performClick()
         }
 
-        tap("Niittyetsivä · luontoretki")
+        tap("Ympäristöoppi · luontoretket")
+        tap("Niittyetsivä")
         compose.onNodeWithContentDescription(NaturePack.species.first().clue).assertExists()
         tap("Vihje")
         compose.onNodeWithText(NaturePack.species.first().clue).assertExists()
@@ -93,5 +102,147 @@ class NatureGameplayTest {
         tap("Etusivu")
         compose.onNodeWithText("Aloita seikkailu").assertExists()
         assertTrue(runBlocking { repository.load().events.isEmpty() })
+    }
+
+    private fun enterEnvironmentInOwnedViewport() {
+        val repository = ProgressRepository(compose.activity.applicationContext.skillitDataStore)
+        runBlocking { repository.save(SavedProgress()) }
+        compose.runOnUiThread { compose.activity.setContent { OwnedRouteViewport(repository) } }
+        compose.onNodeWithTag("route-viewport").assertWidthIsEqualTo(360.dp).assertHeightIsEqualTo(640.dp)
+        tap("Ympäristöoppi · luontoretket")
+    }
+
+    private fun systemBack() {
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        val downTime = SystemClock.uptimeMillis()
+        assertTrue(automation.injectInputEvent(KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK, 0), true))
+        assertTrue(automation.injectInputEvent(KeyEvent(downTime, SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK, 0), true))
+        compose.waitForIdle()
+    }
+
+    private fun waitForVisible(label: String) {
+        compose.waitUntilAtLeastOneExists(hasText(label), 10_000)
+        // No scrolling here: the route transition must reveal the content itself.
+        compose.onNodeWithText(label).assertIsDisplayed()
+    }
+
+    @Test fun chapterShowsReadingBeforePractice() {
+        enterEnvironmentInOwnedViewport()
+        tap("Eliökunnan luokittelu")
+        waitForVisible("Kirjan sivut 6–7")
+        compose.onNodeWithText("Eliöitä ovat eläimet, kasvit, sienet, alkueliöt ja bakteerit.").assertExists()
+        compose.onNodeWithText("Aloita harjoitus (2 tehtävää)").assertExists()
+    }
+
+    @Test fun speciesChapterReadingShowsItsCards() {
+        enterEnvironmentInOwnedViewport()
+        tap("Niityn ja pientareen eläimiä")
+        waitForVisible("Kirjan sivut 12–13")
+        compose.onNodeWithText("kontiainen").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Kontiainen syö kastematoja ja toukkia.").assertExists()
+    }
+
+    @Test fun everyBookChapterCanBeReachedFromTheList() {
+        enterEnvironmentInOwnedViewport()
+        listOf(
+            "Suomessa on monenlaisia elinympäristöjä", "Eliökunnan luokittelu",
+            "Niityt, pihat ja pientareet ovat valoisia kasvupaikkoja", "Niityn ja pientareen kasveja",
+            "Niityn ja pientareen eläimiä", "Suomi on metsäinen ja soinen maa", "Puut kasvavat korkeiksi", "Puita",
+            "Metsissä kasvatetaan puita", "Metsän nisäkkäitä", "Metsän nisäkkäitä: lajikortit", "Metsän lintuja",
+            "Metsän lintuja: lajikortit", "Hyönteiset ja hämähäkit ovat selkärangattomia", "Ravintoketju alkaa kasveista",
+        ).forEach { title ->
+            compose.waitUntilAtLeastOneExists(hasText(title), 10_000)
+            compose.onNodeWithText(title).performScrollTo().assertIsDisplayed()
+        }
+    }
+
+    @Test fun newSpeciesRoundUsesPictureHintFeedbackAndAllowsAnotherTry() {
+        enterEnvironmentInOwnedViewport()
+        tap("Puita")
+        tap("Aloita harjoitus (8 tehtävää)")
+        waitForVisible("Mikä laji kuvassa on?")
+        val clue = "Lyhyet neulaset kasvavat oksalla yksittäin."
+        compose.onNodeWithContentDescription(clue).assertIsDisplayed()
+        compose.onNodeWithText(clue).assertDoesNotExist()
+        tap("Vihje")
+        compose.onNodeWithText(clue).assertExists()
+        tap("mänty")
+        compose.onNodeWithText("Oikea vastaus: kuusi").assertExists()
+        compose.onNodeWithText("Lähde: käyttäjän toimittama ympäristöopin sivu 18.").assertExists()
+        tap("Jatka")
+        listOf("mänty", "kataja", "pihlaja", "rauduskoivu", "hieskoivu", "haapa", "harmaaleppä").forEach { answer ->
+            tap(answer)
+            tap("Jatka")
+        }
+        waitForVisible("Tunnistit oikein 7/8 tehtävää. Voit tutkia lajeja uudelleen omaan tahtiisi.")
+        tap("Uusi retki")
+        waitForVisible("Tehtävä 1/8 · 0 oikein")
+        tap("kuusi")
+        compose.onNodeWithText("Oikein!").assertExists()
+    }
+
+    @Test fun lastChapterRoundEndsWithoutANextChapter() {
+        enterEnvironmentInOwnedViewport()
+        tap("Ravintoketju alkaa kasveista")
+        tap("Aloita harjoitus (5 tehtävää)")
+        listOf(
+            "apila → metsäjänis → ilves",
+            "Kasveista, jotka valmistavat ravintoa auringonvalon avulla.",
+            "Mihin suuntaan ravinto siirtyy eliöltä toiselle.",
+            "Kasveja tai niiden osia.",
+            "Hajottaa kuollutta eloperäistä ainesta; esimerkkejä ovat sienet ja bakteerit.",
+        ).forEach { answer ->
+            tap(answer)
+            tap("Jatka")
+        }
+        waitForVisible("Tunnistit oikein 5/5 tehtävää. Voit tutkia lajeja uudelleen omaan tahtiisi.")
+        compose.onNodeWithText("Seuraava luku", substring = true).assertDoesNotExist()
+    }
+
+    @Test fun chapterRoundGivesFeedbackAndLeadsToNextChapter() {
+        enterEnvironmentInOwnedViewport()
+        tap("Eliökunnan luokittelu")
+        tap("Aloita harjoitus (2 tehtävää)")
+        waitForVisible("Mihin eliökuntaan sieni kuuluu?")
+        tap("kasveihin")
+        compose.onNodeWithText("Oikea vastaus: sieniin").assertExists()
+        compose.onNodeWithText("Lähde: käyttäjän toimittama ympäristöopin sivu 6.").assertExists()
+        tap("Jatka")
+        waitForVisible("Mihin selkärankaisten ryhmään sammakko kuuluu?")
+        tap("sammakkoeläimiin")
+        compose.onNodeWithText("Oikein!").assertExists()
+        tap("Jatka")
+        waitForVisible("Tunnistit oikein 1/2 tehtävää. Voit tutkia lajeja uudelleen omaan tahtiisi.")
+        tap("Seuraava luku: Niityt, pihat ja pientareet ovat valoisia kasvupaikkoja")
+        waitForVisible("Kirjan sivut 8–9")
+    }
+
+    @Test fun backStepsFromPracticeToReadingToListToHome() {
+        enterEnvironmentInOwnedViewport()
+        tap("Eliökunnan luokittelu")
+        tap("Aloita harjoitus (2 tehtävää)")
+        waitForVisible("Mihin eliökuntaan sieni kuuluu?")
+        systemBack()
+        waitForVisible("Kirjan sivut 6–7")
+        systemBack()
+        waitForVisible("Valitse luku. Voit lukea ja harjoitella omaan tahtiisi.")
+        systemBack()
+        compose.waitUntilAtLeastOneExists(hasText("Ympäristöoppi · luontoretket"), 10_000)
+    }
+
+    // Production content on purpose: recreation would drop the owned wrapper, and with it the
+    // position-based saveable keys. This test makes no visibility claims, so it needs no viewport.
+    @Test fun chapterPracticeSurvivesRecreationAndLeavesMusicSaveUntouched() {
+        val repository = ProgressRepository(compose.activity.applicationContext.skillitDataStore)
+        runBlocking { repository.reset(muted = false) }
+        compose.activityRule.scenario.recreate()
+        tap("Ympäristöoppi · luontoretket")
+        tap("Eliökunnan luokittelu")
+        tap("Aloita harjoitus (2 tehtävää)")
+        tap("kasveihin")
+        compose.activityRule.scenario.recreate()
+        compose.waitUntilAtLeastOneExists(hasText("Oikea vastaus: sieniin"), 10_000)
+        val saved = runBlocking { repository.load() }
+        assertTrue(saved.events.isEmpty() && saved.practice.isEmpty())
     }
 }

@@ -33,13 +33,13 @@ Finnish names and measurements below follow the printed cards. A dash means the 
 | 11 | harakankello | 20–70 cm | kesä–heinäkuu | Violet bell-shaped flowers turn toward sun and droop in rain. |
 | 11 | niittyleinikki | 10–60 cm | kesä–syyskuu | Yellow flowers; mildly poisonous plant. |
 | 11 | maitohorsma | 50–150 cm | kesä–elokuu | Purple-red flowers and narrow pointed leaves; leaves contain vitamin C. |
-| 12 | heinäsirkka | 2–3 cm | Plants | Egg → nymph → adult; jumps about half a metre using hind legs. |
-| 12 | hepokatti | 3–4 cm | Insects | Egg → nymph → adult; larger than heinäsirkka and has long antennae. |
+| 12 | heinäsirkka | 2–3 cm | Plants | Egg → larva ("toukka") → adult; jumps about half a metre using hind legs. |
+| 12 | hepokatti | 3–4 cm | Insects | Egg → larva ("toukka") → adult; larger than heinäsirkka and has long antennae. |
 | 12 | kastemato | 10–30 cm | Fallen leaves and dead plants in soil | Lives mostly underground; often reaches surface in rain. |
 | 12 | leppäkerttu | 5 mm | Aphids, mites, small insects | Bad taste and colour warn predators. |
-| 13 | sitruunaperhonen | 5 cm wingspan | Flower nectar; rest obscured | Yellow illustration; other text partly obscured by glare. |
+| 13 | sitruunaperhonen | 5 cm wingspan | Flower nectar | Overwinters in Finland (legible in the canonical scan). |
 | 13 | amiraaliperhonen | 5 cm wingspan | Flower nectar and tree sap | Flies south for winter. |
-| 13 | kimalainen | 1–2 cm | Nectar and pollen | Queen lays eggs in wax cells; only queens survive winter. |
+| 13 | kimalainen | 1–2 cm | Nectar and pollen | Female lays eggs in wax cells; only females survive winter. |
 | 13 | kontiainen | 10–15 cm | Earthworms and larvae | Shovel-like forelegs dig underground; formerly called maamyyrä. |
 
 ## Printed exercises
@@ -54,6 +54,6 @@ Finnish names and measurements below follow the printed cards. A dash means the 
 - Page 7: glare covers the printed labels next to the bird and fox. The game does not rely on those labels.
 - Page 9: glare crosses parts of the insect-food paragraph and summary box. The pollination question uses the clear explanatory paragraph below.
 - Page 11: glare affects some of the pihatatar and pihasaunio text. Their questions use the visible pictures and unambiguous identifying traits.
-- Page 13: glare covers parts of the butterfly cards. The sitruunaperhonen fact in the game is limited to its visible yellow wings; no obscured wording was reconstructed.
+- Page 13: glare covered parts of the butterfly cards in the photos. The canonical scan is clear, and the sitruunaperhonen clue and fact now use it.
 
-The twenty cropped illustrations are in `app/src/main/res/drawable-nodpi/`. Their filenames match the species IDs in `NaturePack.kt`. The full photographed pages are not included in the app. The source notes and question page numbers let a reviewer compare every fact with the supplied photos.
+The illustrations were replaced with crops from the canonical scan; see `nature-image-sources.md`. The full pages are not included in the app. The source notes and question page numbers let a reviewer compare every fact with the supplied photos.

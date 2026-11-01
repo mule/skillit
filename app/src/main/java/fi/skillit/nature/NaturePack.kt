@@ -6,7 +6,7 @@ data class NatureSpecies(
     val id: String,
     val name: String,
     val group: String,
-    val illustration: Int,
+    val illustration: Int?,
     val clue: String,
     val fact: String,
     val sourcePage: Int,
@@ -34,7 +34,7 @@ object NaturePack {
         NatureSpecies("koiranputki", "koiranputki", "kasvi", R.drawable.nature_koiranputki,
             "Valkoisessa kukinnossa on paljon pieniä kukkia.", "Koiranputki on korkea niitty- ja pientarekasvi.", 10),
         NatureSpecies("vuohenputki", "vuohenputki", "kasvi", R.drawable.nature_vuohenputki,
-            "Valkoisten kukkien alla on koiranputkea leveämmät lehdet.", "Vuohenputki leviää voimakkaasti.", 10),
+            "Valkoisten kukkien alla on koiranputkea ehyemmät lehdet.", "Vuohenputki leviää voimakkaasti.", 10),
         NatureSpecies("siankarsamo", "siankärsämö", "kasvi", R.drawable.nature_siankarsamo,
             "Tukevan varren päässä on paljon valkoisia kukkia.", "Siankärsämö kukkii heinä–syyskuussa.", 10),
         NatureSpecies("pujo", "pujo", "kasvi", R.drawable.nature_pujo,
@@ -60,7 +60,7 @@ object NaturePack {
         NatureSpecies("leppakerttu", "leppäkerttu", "eläin", R.drawable.nature_leppakerttu,
             "Punaisissa peitinsiivissä on mustia pilkkuja.", "Leppäkerttu syö kirvoja ja punkkeja.", 12),
         NatureSpecies("sitruunaperhonen", "sitruunaperhonen", "eläin", R.drawable.nature_sitruunaperhonen,
-            "Keltaiset siivet muistuttavat lehtiä.", "Sitruunaperhonen on perhonen, jonka kuvassa siivet ovat keltaiset.", 13),
+            "Keltaiset siivet; talvehtii Suomessa.", "Sitruunaperhoset talvehtivat Suomessa ja imevät ravinnokseen kukkien mettä.", 13),
         NatureSpecies("amiraaliperhonen", "amiraaliperhonen", "eläin", R.drawable.nature_amiraaliperhonen,
             "Tummissa siivissä on oranssinpunainen kuvio.", "Amiraaliperhonen lentää talveksi etelään.", 13),
         NatureSpecies("kimalainen", "kimalainen", "eläin", R.drawable.nature_kimalainen,
@@ -114,4 +114,19 @@ object NaturePack {
         }
         add(rotatedConceptQuestions.last())
     }
+
+    val forestSpecies: List<NatureSpecies> = ForestContent.species
+
+    /** Every book spread and question, before the approval gate. */
+    internal val allChapters: List<NatureChapter> =
+        natureChapters(species + forestSpecies, questions + ForestContent.questions)
+
+    /** What the child can open: printed pages 4–33. Pages 4–13 reuse the questions above. */
+    val chapters: List<NatureChapter> = activeChapters(allChapters, ForestContent.approvedChapterIds,
+        questions.map { it.id }.toSet() + ForestContent.approvedQuestionIds)
+
+    /** The original meadow trip, kept as one continuous round. */
+    val trip = NatureChapter("niittyetsiva", "Niittyetsivä", 4, 13, emptyList(), emptyList(), species, questions)
+
+    fun chapter(id: String): NatureChapter? = if (id == trip.id) trip else chapters.firstOrNull { it.id == id }
 }
