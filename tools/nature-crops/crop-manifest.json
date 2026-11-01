@@ -6,9 +6,15 @@
     "sha256": "b464cf60de0edb2bac6d24148d6adaf868c66c7dbd34dd0a30dd9c7e82fa01e4",
     "bytes": 69911526,
     "pdfPages": 15,
-    "pageImageSize": [3510, 5100],
+    "pageImageSize": [
+      3510,
+      5100
+    ],
     "rotationToUpright": "CW90",
-    "uprightPageSize": [5100, 3510],
+    "uprightPageSize": [
+      5100,
+      3510
+    ],
     "private": true
   },
   "coordinateSpace": "Boxes are [x0, y0, x1, y1] in FULL-RESOLUTION UPRIGHT page pixels after rotating the scan 90 degrees clockwise. x: 0..5100 (left printed page 0..2550, right printed page 2550..5100), y: 0..3510. Half-open: pixel x1/y1 excluded. Read coordinates directly off the labeled grid sheets in tmp/verify/environment/asset-work/grid/.",
@@ -19,66 +25,2575 @@
     "neverUpscale": true
   },
   "verification": {
-    "status": "pending-bounds",
-    "reason": "OpenCode model cannot view images (no image input support). No bounds chosen or verified by the agent. Bounds and semantic species verification MUST come from root/Agy using the grid sheets and candidate sheets.",
-    "protocol": "1) Human confirms each box against grid/candidate sheets at native-pixel zoom. 2) Run build_nature_crops.py. 3) Human inspects the labeled contact sheet of all 44 outputs and the per-crop native-pixel samples. 4) Only then mark entries verified in this manifest."
+    "status": "approved-ai-visual-review",
+    "boundsProvenance": "Proposed by Agy (Gemini 4, image input) against the actual scans; independently reviewed by root (GPT, image input) on all 5 source grids and a first-contact comparison. No human has approved these crops; final original-resolution contact-44 review is pending.",
+    "exclusionPolicy": "Document-art clipping rectangles (paper fill #dbdcdb) only, outside subject art: rauduskoivu (text above leaf inset; left edge refined to x=1260 preview by root after the first mask clipped canopy), hirvi (card number/title strip left of antlers), peippo (three text strips). Season/sex annotations (kesa/talvi, male symbols) stay: original scientific annotations, not species answers.",
+    "protocol": "1) This applier verified preview scale from actual preview headers. 2) build_nature_crops.py --self-test/--dry-run, then guarded serial build. 3) root/Agy inspect contact-44 at native resolution plus the exclusion spot-check pairs (unmasked/masked) before any verified status or commit.",
+    "finalOutputVisualReview": {
+      "status": "approved-ai-visual-review (not human)",
+      "reviewer": "root GPT",
+      "date": "2026-11-01",
+      "inspected": {
+        "all44": [
+          "tmp/verify/environment/asset-work/contacts/contact-44.png"
+        ],
+        "highRiskFullResolution": [
+          "app/src/main/res/drawable-nodpi/nature_hirvi.jpg",
+          "app/src/main/res/drawable-nodpi/nature_peippo.jpg",
+          "app/src/main/res/drawable-nodpi/nature_rauduskoivu.jpg"
+        ]
+      },
+      "result": "All 44 show intended species art, no species-name answer labels; exclusion rectangles preserve canopy/leaf inset (rauduskoivu), antlers/body (hirvi), and head/beak/feet (peippo). Season labels (kesa/talvi) and sex symbols explicitly accepted."
+    }
   },
   "pages": {
-    "1":  {"printed": [18, 19], "leftPrinted": 18, "rightPrinted": 19, "topic": "puulajit"},
-    "4":  {"printed": [24, 25], "leftPrinted": 24, "rightPrinted": 25, "topic": "nisäkäslajit ja jäljet"},
-    "6":  {"printed": [28, 29], "leftPrinted": 28, "rightPrinted": 29, "topic": "lintulajit"},
-    "14": {"printed": [10, 11], "leftPrinted": 10, "rightPrinted": 11, "topic": "kasvilajit (old pack)"},
-    "15": {"printed": [12, 13], "leftPrinted": 12, "rightPrinted": 13, "topic": "eläinlajit (old pack)"}
+    "1": {
+      "printed": [
+        18,
+        19
+      ],
+      "leftPrinted": 18,
+      "rightPrinted": 19,
+      "topic": "puulajit"
+    },
+    "4": {
+      "printed": [
+        24,
+        25
+      ],
+      "leftPrinted": 24,
+      "rightPrinted": 25,
+      "topic": "nisäkäslajit ja jäljet"
+    },
+    "6": {
+      "printed": [
+        28,
+        29
+      ],
+      "leftPrinted": 28,
+      "rightPrinted": 29,
+      "topic": "lintulajit"
+    },
+    "14": {
+      "printed": [
+        10,
+        11
+      ],
+      "leftPrinted": 10,
+      "rightPrinted": 11,
+      "topic": "kasvilajit (old pack)"
+    },
+    "15": {
+      "printed": [
+        12,
+        13
+      ],
+      "leftPrinted": 12,
+      "rightPrinted": 13,
+      "topic": "eläinlajit (old pack)"
+    }
   },
   "species": [
-    {"id": "paivankakkara", "name": "päivänkakkara", "group": "kasvi", "kind": "replace", "resource": "nature_paivankakkara.jpg", "pdfPage": 14, "printedPage": 10, "cardHint": "printed 10, plant card 1 of 6", "box": null, "status": "pending-bounds"},
-    {"id": "pietaryrtti", "name": "pietaryrtti", "group": "kasvi", "kind": "replace", "resource": "nature_pietaryrtti.jpg", "pdfPage": 14, "printedPage": 10, "cardHint": "printed 10, plant card 2 of 6", "box": null, "status": "pending-bounds"},
-    {"id": "koiranputki", "name": "koiranputki", "group": "kasvi", "kind": "replace", "resource": "nature_koiranputki.jpg", "pdfPage": 14, "printedPage": 10, "cardHint": "printed 10, plant card 3 of 6", "box": null, "status": "pending-bounds"},
-    {"id": "vuohenputki", "name": "vuohenputki", "group": "kasvi", "kind": "replace", "resource": "nature_vuohenputki.jpg", "pdfPage": 14, "printedPage": 10, "cardHint": "printed 10, plant card 4 of 6", "box": null, "status": "pending-bounds"},
-    {"id": "siankarsamo", "name": "siankärsämö", "group": "kasvi", "kind": "replace", "resource": "nature_siankarsamo.jpg", "pdfPage": 14, "printedPage": 10, "cardHint": "printed 10, plant card 5 of 6", "box": null, "status": "pending-bounds"},
-    {"id": "pujo", "name": "pujo", "group": "kasvi", "kind": "replace", "resource": "nature_pujo.jpg", "pdfPage": 14, "printedPage": 10, "cardHint": "printed 10, plant card 6 of 6", "box": null, "status": "pending-bounds"},
-    {"id": "pihatatar", "name": "pihatatar", "group": "kasvi", "kind": "replace", "resource": "nature_pihatatar.jpg", "pdfPage": 14, "printedPage": 11, "cardHint": "printed 11, plant card 7 of 12", "box": null, "status": "pending-bounds"},
-    {"id": "pihasaunio", "name": "pihasaunio", "group": "kasvi", "kind": "replace", "resource": "nature_pihasaunio.jpg", "pdfPage": 14, "printedPage": 11, "cardHint": "printed 11, plant card 8 of 12", "box": null, "status": "pending-bounds"},
-    {"id": "kissankello", "name": "kissankello", "group": "kasvi", "kind": "replace", "resource": "nature_kissankello.jpg", "pdfPage": 14, "printedPage": 11, "cardHint": "printed 11, plant card 9 of 12", "box": null, "status": "pending-bounds"},
-    {"id": "harakankello", "name": "harakankello", "group": "kasvi", "kind": "replace", "resource": "nature_harakankello.jpg", "pdfPage": 14, "printedPage": 11, "cardHint": "printed 11, plant card 10 of 12", "box": null, "status": "pending-bounds"},
-    {"id": "niittyleinikki", "name": "niittyleinikki", "group": "kasvi", "kind": "replace", "resource": "nature_niittyleinikki.jpg", "pdfPage": 14, "printedPage": 11, "cardHint": "printed 11, plant card 11 of 12", "box": null, "status": "pending-bounds"},
-    {"id": "maitohorsma", "name": "maitohorsma", "group": "kasvi", "kind": "replace", "resource": "nature_maitohorsma.jpg", "pdfPage": 14, "printedPage": 11, "cardHint": "printed 11, plant card 12 of 12", "box": null, "status": "pending-bounds"},
-    {"id": "heinasirkka", "name": "heinäsirkka", "group": "eläin", "kind": "replace", "resource": "nature_heinasirkka.jpg", "pdfPage": 15, "printedPage": 12, "cardHint": "printed 12, animal card 1 of 4", "box": null, "status": "pending-bounds"},
-    {"id": "hepokatti", "name": "hepokatti", "group": "eläin", "kind": "replace", "resource": "nature_hepokatti.jpg", "pdfPage": 15, "printedPage": 12, "cardHint": "printed 12, animal card 2 of 4", "box": null, "status": "pending-bounds"},
-    {"id": "kastemato", "name": "kastemato", "group": "eläin", "kind": "replace", "resource": "nature_kastemato.jpg", "pdfPage": 15, "printedPage": 12, "cardHint": "printed 12, animal card 3 of 4", "box": null, "status": "pending-bounds"},
-    {"id": "leppakerttu", "name": "leppäkerttu", "group": "eläin", "kind": "replace", "resource": "nature_leppakerttu.jpg", "pdfPage": 15, "printedPage": 12, "cardHint": "printed 12, animal card 4 of 4", "box": null, "status": "pending-bounds"},
-    {"id": "sitruunaperhonen", "name": "sitruunaperhonen", "group": "eläin", "kind": "replace", "resource": "nature_sitruunaperhonen.jpg", "pdfPage": 15, "printedPage": 13, "cardHint": "printed 13, animal card 5 of 8", "box": null, "status": "pending-bounds"},
-    {"id": "amiraaliperhonen", "name": "amiraaliperhonen", "group": "eläin", "kind": "replace", "resource": "nature_amiraaliperhonen.jpg", "pdfPage": 15, "printedPage": 13, "cardHint": "printed 13, animal card 6 of 8", "box": null, "status": "pending-bounds"},
-    {"id": "kimalainen", "name": "kimalainen", "group": "eläin", "kind": "replace", "resource": "nature_kimalainen.jpg", "pdfPage": 15, "printedPage": 13, "cardHint": "printed 13, animal card 7 of 8", "box": null, "status": "pending-bounds"},
-    {"id": "kontiainen", "name": "kontiainen", "group": "eläin", "kind": "replace", "resource": "nature_kontiainen.jpg", "pdfPage": 15, "printedPage": 13, "cardHint": "printed 13, animal card 8 of 8", "box": null, "status": "pending-bounds"},
-    {"id": "kuusi", "name": "kuusi", "group": "puu", "kind": "new", "resource": "nature_kuusi.jpg", "pdfPage": 1, "printedPage": 18, "cardHint": "printed 18, tree 1 of 4 on page", "box": null, "status": "pending-bounds"},
-    {"id": "manty", "name": "mänty", "group": "puu", "kind": "new", "resource": "nature_manty.jpg", "pdfPage": 1, "printedPage": 18, "cardHint": "printed 18, tree 2 of 4 on page", "box": null, "status": "pending-bounds"},
-    {"id": "kataja", "name": "kataja", "group": "puu", "kind": "new", "resource": "nature_kataja.jpg", "pdfPage": 1, "printedPage": 18, "cardHint": "printed 18, tree 3 of 4 on page", "box": null, "status": "pending-bounds"},
-    {"id": "pihlaja", "name": "pihlaja", "group": "puu", "kind": "new", "resource": "nature_pihlaja.jpg", "pdfPage": 1, "printedPage": 18, "cardHint": "printed 18, tree 4 of 4 on page", "box": null, "status": "pending-bounds"},
-    {"id": "rauduskoivu", "name": "rauduskoivu", "group": "puu", "kind": "new", "resource": "nature_rauduskoivu.jpg", "pdfPage": 1, "printedPage": 19, "cardHint": "printed 19, tree 1 of 4 on page", "box": null, "status": "pending-bounds"},
-    {"id": "hieskoivu", "name": "hieskoivu", "group": "puu", "kind": "new", "resource": "nature_hieskoivu.jpg", "pdfPage": 1, "printedPage": 19, "cardHint": "printed 19, tree 2 of 4 on page", "box": null, "status": "pending-bounds"},
-    {"id": "haapa", "name": "haapa", "group": "puu", "kind": "new", "resource": "nature_haapa.jpg", "pdfPage": 1, "printedPage": 19, "cardHint": "printed 19, tree 3 of 4 on page", "box": null, "status": "pending-bounds"},
-    {"id": "harmaaleppa", "name": "harmaaleppä", "group": "puu", "kind": "new", "resource": "nature_harmaaleppa.jpg", "pdfPage": 1, "printedPage": 19, "cardHint": "printed 19, tree 4 of 4 on page", "box": null, "status": "pending-bounds"},
-    {"id": "metsamyyra", "name": "metsämyyrä", "group": "nisäkäs", "kind": "new", "resource": "nature_metsamyyra.jpg", "pdfPage": 4, "printedPage": 24, "cardHint": "printed 24, mammal 1 of 4; card also shows tracks", "box": null, "status": "pending-bounds"},
-    {"id": "metsajanis", "name": "metsäjänis", "group": "nisäkäs", "kind": "new", "resource": "nature_metsajanis.jpg", "pdfPage": 4, "printedPage": 24, "cardHint": "printed 24, mammal 2 of 4; winter/summer coats shown", "box": null, "status": "pending-bounds"},
-    {"id": "hirvi", "name": "hirvi", "group": "nisäkäs", "kind": "new", "resource": "nature_hirvi.jpg", "pdfPage": 4, "printedPage": 24, "cardHint": "printed 24, mammal 3 of 4; card also shows tracks", "box": null, "status": "pending-bounds"},
-    {"id": "valkohantakauris", "name": "valkohäntäkauris", "group": "nisäkäs", "kind": "new", "resource": "nature_valkohantakauris.jpg", "pdfPage": 4, "printedPage": 24, "cardHint": "printed 24, mammal 4 of 4; card also shows tracks", "box": null, "status": "pending-bounds"},
-    {"id": "mayra", "name": "mäyrä", "group": "nisäkäs", "kind": "new", "resource": "nature_mayra.jpg", "pdfPage": 4, "printedPage": 25, "cardHint": "printed 25, mammal 1 of 4; card also shows tracks", "box": null, "status": "pending-bounds"},
-    {"id": "kettu", "name": "kettu", "group": "nisäkäs", "kind": "new", "resource": "nature_kettu.jpg", "pdfPage": 4, "printedPage": 25, "cardHint": "printed 25, mammal 2 of 4; card also shows tracks", "box": null, "status": "pending-bounds"},
-    {"id": "ilves", "name": "ilves", "group": "nisäkäs", "kind": "new", "resource": "nature_ilves.jpg", "pdfPage": 4, "printedPage": 25, "cardHint": "printed 25, mammal 3 of 4; card also shows tracks", "box": null, "status": "pending-bounds"},
-    {"id": "susi", "name": "susi", "group": "nisäkäs", "kind": "new", "resource": "nature_susi.jpg", "pdfPage": 4, "printedPage": 25, "cardHint": "printed 25, mammal 4 of 4; card also shows tracks", "box": null, "status": "pending-bounds"},
-    {"id": "metso", "name": "metso", "group": "lintu", "kind": "new", "resource": "nature_metso.jpg", "pdfPage": 6, "printedPage": 28, "cardHint": "printed 28, bird 1 of 4", "box": null, "status": "pending-bounds"},
-    {"id": "teeri", "name": "teeri", "group": "lintu", "kind": "new", "resource": "nature_teeri.jpg", "pdfPage": 6, "printedPage": 28, "cardHint": "printed 28, bird 2 of 4", "box": null, "status": "pending-bounds"},
-    {"id": "kapytikka", "name": "käpytikka", "group": "lintu", "kind": "new", "resource": "nature_kapytikka.jpg", "pdfPage": 6, "printedPage": 28, "cardHint": "printed 28, bird 3 of 4", "box": null, "status": "pending-bounds"},
-    {"id": "huuhkaja", "name": "huuhkaja", "group": "lintu", "kind": "new", "resource": "nature_huuhkaja.jpg", "pdfPage": 6, "printedPage": 28, "cardHint": "printed 28, bird 4 of 4", "box": null, "status": "pending-bounds"},
-    {"id": "peippo", "name": "peippo", "group": "lintu", "kind": "new", "resource": "nature_peippo.jpg", "pdfPage": 6, "printedPage": 29, "cardHint": "printed 29, bird 1 of 4", "box": null, "status": "pending-bounds"},
-    {"id": "rakattirastas", "name": "räkättirastas", "group": "lintu", "kind": "new", "resource": "nature_rakattirastas.jpg", "pdfPage": 6, "printedPage": 29, "cardHint": "printed 29, bird 2 of 4", "box": null, "status": "pending-bounds"},
-    {"id": "homotiainen", "name": "hömötiainen", "group": "lintu", "kind": "new", "resource": "nature_homotiainen.jpg", "pdfPage": 6, "printedPage": 29, "cardHint": "printed 29, bird 3 of 4", "box": null, "status": "pending-bounds"},
-    {"id": "hippiainen", "name": "hippiäinen", "group": "lintu", "kind": "new", "resource": "nature_hippiainen.jpg", "pdfPage": 6, "printedPage": 29, "cardHint": "printed 29, bird 4 of 4", "box": null, "status": "pending-bounds"}
+    {
+      "id": "paivankakkara",
+      "name": "päivänkakkara",
+      "group": "kasvi",
+      "kind": "replace",
+      "resource": "nature_paivankakkara.jpg",
+      "pdfPage": 14,
+      "printedPage": 10,
+      "cardHint": "printed 10, plant card 1 of 6",
+      "box": [
+        548,
+        1070,
+        880,
+        1683
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          215,
+          420,
+          345,
+          660
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean; sharper contrast in PDF scan",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "pietaryrtti",
+      "name": "pietaryrtti",
+      "group": "kasvi",
+      "kind": "replace",
+      "resource": "nature_pietaryrtti.jpg",
+      "pdfPage": 14,
+      "printedPage": 10,
+      "cardHint": "printed 10, plant card 2 of 6",
+      "box": [
+        1619,
+        1108,
+        2053,
+        1703
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          635,
+          435,
+          805,
+          668
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean; sharper in PDF scan",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "koiranputki",
+      "name": "koiranputki",
+      "group": "kasvi",
+      "kind": "replace",
+      "resource": "nature_koiranputki.jpg",
+      "pdfPage": 14,
+      "printedPage": 10,
+      "cardHint": "printed 10, plant card 3 of 6",
+      "box": [
+        504,
+        1924,
+        969,
+        2529
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          198,
+          755,
+          380,
+          992
+        ],
+        "exclusionsPreview": [],
+        "note": "Existing crop clipped left flower umbel; new box unclipped",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "vuohenputki",
+      "name": "vuohenputki",
+      "group": "kasvi",
+      "kind": "replace",
+      "resource": "nature_vuohenputki.jpg",
+      "pdfPage": 14,
+      "printedPage": 10,
+      "cardHint": "printed 10, plant card 4 of 6",
+      "box": [
+        1601,
+        1916,
+        1989,
+        2529
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          628,
+          752,
+          780,
+          992
+        ],
+        "exclusionsPreview": [],
+        "note": "Existing crop clipped right leaf tip; new box unclipped",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "siankarsamo",
+      "name": "siankärsämö",
+      "group": "kasvi",
+      "kind": "replace",
+      "resource": "nature_siankarsamo.jpg",
+      "pdfPage": 14,
+      "printedPage": 10,
+      "cardHint": "printed 10, plant card 5 of 6",
+      "box": [
+        522,
+        2732,
+        862,
+        3324
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          205,
+          1072,
+          338,
+          1304
+        ],
+        "exclusionsPreview": [],
+        "note": "Existing crop clipped left leaves/flowers; new box unclipped",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "pujo",
+      "name": "pujo",
+      "group": "kasvi",
+      "kind": "replace",
+      "resource": "nature_pujo.jpg",
+      "pdfPage": 14,
+      "printedPage": 10,
+      "cardHint": "printed 10, plant card 6 of 6",
+      "box": [
+        1637,
+        2732,
+        1951,
+        3345
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          642,
+          1072,
+          765,
+          1312
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean; better margin in PDF scan",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "pihatatar",
+      "name": "pihatatar",
+      "group": "kasvi",
+      "kind": "replace",
+      "resource": "nature_pihatatar.jpg",
+      "pdfPage": 14,
+      "printedPage": 11,
+      "cardHint": "printed 11, plant card 7 of 12",
+      "box": [
+        2945,
+        1101,
+        3264,
+        1739
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1155,
+          432,
+          1280,
+          682
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean; removes camera shadow",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "pihasaunio",
+      "name": "pihasaunio",
+      "group": "kasvi",
+      "kind": "replace",
+      "resource": "nature_pihasaunio.jpg",
+      "pdfPage": 14,
+      "printedPage": 11,
+      "cardHint": "printed 11, plant card 8 of 12",
+      "box": [
+        3972,
+        1101,
+        4366,
+        1708
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1558,
+          432,
+          1712,
+          670
+        ],
+        "exclusionsPreview": [],
+        "note": "**Major fix:** existing crop had heavy white glare washing out lower leaves",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "kissankello",
+      "name": "kissankello",
+      "group": "kasvi",
+      "kind": "replace",
+      "resource": "nature_kissankello.jpg",
+      "pdfPage": 14,
+      "printedPage": 11,
+      "cardHint": "printed 11, plant card 9 of 12",
+      "box": [
+        2958,
+        1924,
+        3226,
+        2544
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1160,
+          755,
+          1265,
+          998
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean; sharper in PDF scan",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "harakankello",
+      "name": "harakankello",
+      "group": "kasvi",
+      "kind": "replace",
+      "resource": "nature_harakankello.jpg",
+      "pdfPage": 14,
+      "printedPage": 11,
+      "cardHint": "printed 11, plant card 10 of 12",
+      "box": [
+        3990,
+        1924,
+        4386,
+        2544
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1565,
+          755,
+          1720,
+          998
+        ],
+        "exclusionsPreview": [],
+        "note": "**Major fix:** existing crop had glare on top flower and top-right bud",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "niittyleinikki",
+      "name": "niittyleinikki",
+      "group": "kasvi",
+      "kind": "replace",
+      "resource": "nature_niittyleinikki.jpg",
+      "pdfPage": 14,
+      "printedPage": 11,
+      "cardHint": "printed 11, plant card 11 of 12",
+      "box": [
+        2907,
+        2752,
+        3264,
+        3352
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1140,
+          1080,
+          1280,
+          1315
+        ],
+        "exclusionsPreview": [],
+        "note": "Existing crop clipped left leaf tip; new box unclipped",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "maitohorsma",
+      "name": "maitohorsma",
+      "group": "kasvi",
+      "kind": "replace",
+      "resource": "nature_maitohorsma.jpg",
+      "pdfPage": 14,
+      "printedPage": 11,
+      "cardHint": "printed 11, plant card 12 of 12",
+      "box": [
+        4029,
+        2752,
+        4381,
+        3352
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1580,
+          1080,
+          1718,
+          1315
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean; avoids bottom card border",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "heinasirkka",
+      "name": "heinäsirkka",
+      "group": "eläin",
+      "kind": "replace",
+      "resource": "nature_heinasirkka.jpg",
+      "pdfPage": 15,
+      "printedPage": 12,
+      "cardHint": "printed 12, animal card 1 of 4",
+      "box": [
+        624,
+        1600,
+        1428,
+        1999
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          245,
+          628,
+          560,
+          784
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean; sharper in PDF scan",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "hepokatti",
+      "name": "hepokatti",
+      "group": "eläin",
+      "kind": "replace",
+      "resource": "nature_hepokatti.jpg",
+      "pdfPage": 15,
+      "printedPage": 12,
+      "cardHint": "printed 12, animal card 2 of 4",
+      "box": [
+        1759,
+        1567,
+        2461,
+        2009
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          690,
+          615,
+          965,
+          788
+        ],
+        "exclusionsPreview": [],
+        "note": "**Major fix:** existing crop clipped top of hind legs/wings and lower antenna",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "kastemato",
+      "name": "kastemato",
+      "group": "eläin",
+      "kind": "replace",
+      "resource": "nature_kastemato.jpg",
+      "pdfPage": 15,
+      "printedPage": 12,
+      "cardHint": "printed 12, animal card 3 of 4",
+      "box": [
+        688,
+        2798,
+        1314,
+        3289
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          270,
+          1098,
+          515,
+          1290
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean; even lighting",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "leppakerttu",
+      "name": "leppäkerttu",
+      "group": "eläin",
+      "kind": "replace",
+      "resource": "nature_leppakerttu.jpg",
+      "pdfPage": 15,
+      "printedPage": 12,
+      "cardHint": "printed 12, animal card 4 of 4",
+      "box": [
+        1601,
+        2426,
+        2091,
+        3008
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          628,
+          952,
+          820,
+          1180
+        ],
+        "exclusionsPreview": [],
+        "note": "Existing crop clipped left leg; new box unclipped",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "sitruunaperhonen",
+      "name": "sitruunaperhonen",
+      "group": "eläin",
+      "kind": "replace",
+      "resource": "nature_sitruunaperhonen.jpg",
+      "pdfPage": 15,
+      "printedPage": 13,
+      "cardHint": "printed 13, animal card 5 of 8",
+      "box": [
+        2978,
+        1575,
+        3711,
+        2027
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1168,
+          618,
+          1455,
+          795
+        ],
+        "exclusionsPreview": [],
+        "note": "**Major fix:** existing crop had glare on right wing and clipped top wingtips",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "amiraaliperhonen",
+      "name": "amiraaliperhonen",
+      "group": "eläin",
+      "kind": "replace",
+      "resource": "nature_amiraaliperhonen.jpg",
+      "pdfPage": 15,
+      "printedPage": 13,
+      "cardHint": "printed 13, animal card 6 of 8",
+      "box": [
+        4067,
+        1575,
+        4794,
+        2027
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1595,
+          618,
+          1880,
+          795
+        ],
+        "exclusionsPreview": [],
+        "note": "**Major fix:** existing crop had severe glare on left wing & bottom border line",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "kimalainen",
+      "name": "kimalainen",
+      "group": "eläin",
+      "kind": "replace",
+      "resource": "nature_kimalainen.jpg",
+      "pdfPage": 15,
+      "printedPage": 13,
+      "cardHint": "printed 13, animal card 7 of 8",
+      "box": [
+        2850,
+        2452,
+        3379,
+        3054
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1118,
+          962,
+          1325,
+          1198
+        ],
+        "exclusionsPreview": [],
+        "note": "Existing crop clipped left/right middle leg tips; new box unclipped",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "kontiainen",
+      "name": "kontiainen",
+      "group": "eläin",
+      "kind": "replace",
+      "resource": "nature_kontiainen.jpg",
+      "pdfPage": 15,
+      "printedPage": 13,
+      "cardHint": "printed 13, animal card 8 of 8",
+      "box": [
+        4100,
+        2926,
+        4718,
+        3253
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1608,
+          1148,
+          1850,
+          1276
+        ],
+        "exclusionsPreview": [],
+        "note": "Removes black bottom card border line present in existing crop",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "kuusi",
+      "name": "kuusi",
+      "group": "puu",
+      "kind": "new",
+      "resource": "nature_kuusi.jpg",
+      "pdfPage": 1,
+      "printedPage": 18,
+      "cardHint": "printed 18, tree 1 of 4 on page",
+      "box": [
+        683,
+        994,
+        1194,
+        1823
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          268,
+          390,
+          468,
+          715
+        ],
+        "exclusionsPreview": [],
+        "note": "Includes tree and cone/branch inset cleanly",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "manty",
+      "name": "mänty",
+      "group": "puu",
+      "kind": "new",
+      "resource": "nature_manty.jpg",
+      "pdfPage": 1,
+      "printedPage": 18,
+      "cardHint": "printed 18, tree 2 of 4 on page",
+      "box": [
+        1810,
+        1014,
+        2232,
+        1933
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          710,
+          398,
+          875,
+          758
+        ],
+        "exclusionsPreview": [],
+        "note": "Includes tree and cone/needle inset cleanly",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "kataja",
+      "name": "kataja",
+      "group": "puu",
+      "kind": "new",
+      "resource": "nature_kataja.jpg",
+      "pdfPage": 1,
+      "printedPage": 18,
+      "cardHint": "printed 18, tree 3 of 4 on page",
+      "box": [
+        663,
+        2314,
+        1102,
+        3161
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          260,
+          908,
+          432,
+          1240
+        ],
+        "exclusionsPreview": [],
+        "note": "Includes shrub and berry-cone inset cleanly",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "pihlaja",
+      "name": "pihlaja",
+      "group": "puu",
+      "kind": "new",
+      "resource": "nature_pihlaja.jpg",
+      "pdfPage": 1,
+      "printedPage": 18,
+      "cardHint": "printed 18, tree 4 of 4 on page",
+      "box": [
+        1754,
+        2365,
+        2232,
+        3233
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          688,
+          928,
+          875,
+          1268
+        ],
+        "exclusionsPreview": [],
+        "note": "Includes tree and compound leaf/berry inset cleanly",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "rauduskoivu",
+      "name": "rauduskoivu",
+      "group": "puu",
+      "kind": "new",
+      "resource": "nature_rauduskoivu.jpg",
+      "pdfPage": 1,
+      "printedPage": 19,
+      "cardHint": "printed 19, tree 1 of 4 on page",
+      "box": [
+        2784,
+        1126,
+        3328,
+        1958
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [
+        [
+          3213,
+          1126,
+          3328,
+          1624
+        ]
+      ],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1092,
+          442,
+          1305,
+          768
+        ],
+        "exclusionsPreview": [
+          [
+            1260,
+            442,
+            1305,
+            637
+          ]
+        ],
+        "note": "**Mask upper-right `(1222, 442, 1305, 605)`** with paper color `#dbdcdb` (text above leaf inset)",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png",
+            "app/src/main/res/drawable-nodpi/nature_rauduskoivu.jpg"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "hieskoivu",
+      "name": "hieskoivu",
+      "group": "puu",
+      "kind": "new",
+      "resource": "nature_hieskoivu.jpg",
+      "pdfPage": 1,
+      "printedPage": 19,
+      "cardHint": "printed 19, tree 2 of 4 on page",
+      "box": [
+        3881,
+        1096,
+        4399,
+        1989
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1522,
+          430,
+          1725,
+          780
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean; includes tree and leaf/catkin inset",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "haapa",
+      "name": "haapa",
+      "group": "puu",
+      "kind": "new",
+      "resource": "nature_haapa.jpg",
+      "pdfPage": 1,
+      "printedPage": 19,
+      "cardHint": "printed 19, tree 3 of 4 on page",
+      "box": [
+        2784,
+        2390,
+        3234,
+        3217
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1092,
+          938,
+          1268,
+          1262
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean; includes tree and leaf inset",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "harmaaleppa",
+      "name": "harmaaleppä",
+      "group": "puu",
+      "kind": "new",
+      "resource": "nature_harmaaleppa.jpg",
+      "pdfPage": 1,
+      "printedPage": 19,
+      "cardHint": "printed 19, tree 4 of 4 on page",
+      "box": [
+        3876,
+        2383,
+        4374,
+        3263
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1520,
+          935,
+          1715,
+          1280
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean; includes tree and leaf/cone inset",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "metsamyyra",
+      "name": "metsämyyrä",
+      "group": "nisäkäs",
+      "kind": "new",
+      "resource": "nature_metsamyyra.jpg",
+      "pdfPage": 4,
+      "printedPage": 24,
+      "cardHint": "printed 24, mammal 1 of 4; card also shows tracks",
+      "box": [
+        650,
+        1040,
+        1122,
+        1372
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          255,
+          408,
+          440,
+          538
+        ],
+        "exclusionsPreview": [],
+        "note": "Animal illustration only (tracks are at `x=475..565` if desired)",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "metsajanis",
+      "name": "metsäjänis",
+      "group": "nisäkäs",
+      "kind": "new",
+      "resource": "nature_metsajanis.jpg",
+      "pdfPage": 4,
+      "printedPage": 24,
+      "cardHint": "printed 24, mammal 2 of 4; winter/summer coats shown",
+      "box": [
+        1728,
+        1024,
+        2270,
+        1479
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          678,
+          402,
+          890,
+          580
+        ],
+        "exclusionsPreview": [],
+        "note": "Shows both summer (`kesä`) and winter (`talvi`) hares",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "hirvi",
+      "name": "hirvi",
+      "group": "nisäkäs",
+      "kind": "new",
+      "resource": "nature_hirvi.jpg",
+      "pdfPage": 4,
+      "printedPage": 24,
+      "cardHint": "printed 24, mammal 3 of 4; card also shows tracks",
+      "box": [
+        650,
+        2238,
+        1237,
+        2766
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [
+        [
+          650,
+          2238,
+          931,
+          2284
+        ]
+      ],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          255,
+          878,
+          485,
+          1085
+        ],
+        "exclusionsPreview": [
+          [
+            255,
+            878,
+            365,
+            896
+          ]
+        ],
+        "note": "**Mask top-left `(255, 878, 365, 896)`** with `#dbdcdb` to cover `③ hirvi` label left of antlers",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png",
+            "app/src/main/res/drawable-nodpi/nature_hirvi.jpg"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "valkohantakauris",
+      "name": "valkohäntäkauris",
+      "group": "nisäkäs",
+      "kind": "new",
+      "resource": "nature_valkohantakauris.jpg",
+      "pdfPage": 4,
+      "printedPage": 24,
+      "cardHint": "printed 24, mammal 4 of 4; card also shows tracks",
+      "box": [
+        1772,
+        2306,
+        2270,
+        2855
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          695,
+          905,
+          890,
+          1120
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean full-body profile",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "mayra",
+      "name": "mäyrä",
+      "group": "nisäkäs",
+      "kind": "new",
+      "resource": "nature_mayra.jpg",
+      "pdfPage": 4,
+      "printedPage": 25,
+      "cardHint": "printed 25, mammal 1 of 4; card also shows tracks",
+      "box": [
+        2850,
+        1070,
+        3514,
+        1459
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1118,
+          420,
+          1378,
+          572
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean full-body profile",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "kettu",
+      "name": "kettu",
+      "group": "nisäkäs",
+      "kind": "new",
+      "resource": "nature_kettu.jpg",
+      "pdfPage": 4,
+      "printedPage": 25,
+      "cardHint": "printed 25, mammal 2 of 4; card also shows tracks",
+      "box": [
+        3965,
+        1045,
+        4570,
+        1479
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1555,
+          410,
+          1792,
+          580
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean full-body profile",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "ilves",
+      "name": "ilves",
+      "group": "nisäkäs",
+      "kind": "new",
+      "resource": "nature_ilves.jpg",
+      "pdfPage": 4,
+      "printedPage": 25,
+      "cardHint": "printed 25, mammal 3 of 4; card also shows tracks",
+      "box": [
+        2856,
+        2357,
+        3430,
+        2830
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1120,
+          925,
+          1345,
+          1110
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean full-body profile",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "susi",
+      "name": "susi",
+      "group": "nisäkäs",
+      "kind": "new",
+      "resource": "nature_susi.jpg",
+      "pdfPage": 4,
+      "printedPage": 25,
+      "cardHint": "printed 25, mammal 4 of 4; card also shows tracks",
+      "box": [
+        3965,
+        2345,
+        4519,
+        2804
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1555,
+          920,
+          1772,
+          1100
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean full-body profile",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "metso",
+      "name": "metso",
+      "group": "lintu",
+      "kind": "new",
+      "resource": "nature_metso.jpg",
+      "pdfPage": 6,
+      "printedPage": 28,
+      "cardHint": "printed 28, bird 1 of 4",
+      "box": [
+        1213,
+        1465,
+        1773,
+        1950
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          476,
+          575,
+          695,
+          765
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean (`♂` symbol in bottom-right corner)",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "teeri",
+      "name": "teeri",
+      "group": "lintu",
+      "kind": "new",
+      "resource": "nature_teeri.jpg",
+      "pdfPage": 6,
+      "printedPage": 28,
+      "cardHint": "printed 28, bird 2 of 4",
+      "box": [
+        2295,
+        1549,
+        2856,
+        2001
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          900,
+          608,
+          1120,
+          785
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean (`♂` symbol in bottom-right corner)",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "kapytikka",
+      "name": "käpytikka",
+      "group": "lintu",
+      "kind": "new",
+      "resource": "nature_kapytikka.jpg",
+      "pdfPage": 6,
+      "printedPage": 28,
+      "cardHint": "printed 28, bird 3 of 4",
+      "box": [
+        1356,
+        2528,
+        1709,
+        3161
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          532,
+          992,
+          670,
+          1240
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean woodpecker on trunk",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "huuhkaja",
+      "name": "huuhkaja",
+      "group": "lintu",
+      "kind": "new",
+      "resource": "nature_huuhkaja.jpg",
+      "pdfPage": 6,
+      "printedPage": 28,
+      "cardHint": "printed 28, bird 4 of 4",
+      "box": [
+        2402,
+        2561,
+        2800,
+        3187
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          942,
+          1005,
+          1098,
+          1250
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean owl on branch",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "peippo",
+      "name": "peippo",
+      "group": "lintu",
+      "kind": "new",
+      "resource": "nature_peippo.jpg",
+      "pdfPage": 6,
+      "printedPage": 29,
+      "cardHint": "printed 29, bird 1 of 4",
+      "box": [
+        3462,
+        1580,
+        3966,
+        2009
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [
+        [
+          3462,
+          1924,
+          3525,
+          2009
+        ],
+        [
+          3462,
+          1580,
+          3660,
+          1596
+        ],
+        [
+          3659,
+          1580,
+          3966,
+          1622
+        ]
+      ],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1358,
+          620,
+          1555,
+          788
+        ],
+        "exclusionsPreview": [
+          [
+            1358,
+            755,
+            1382,
+            788
+          ],
+          [
+            1358,
+            620,
+            1435,
+            626
+          ],
+          [
+            1435,
+            620,
+            1555,
+            636
+          ]
+        ],
+        "note": "**Mask bottom-left `(1358, 755, 1382, 788)`** (and `(1358, 620, 1435, 626)`) with `#dbdcdb` to cover `\"ista\"`",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png",
+            "app/src/main/res/drawable-nodpi/nature_peippo.jpg"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "rakattirastas",
+      "name": "räkättirastas",
+      "group": "lintu",
+      "kind": "new",
+      "resource": "nature_rakattirastas.jpg",
+      "pdfPage": 6,
+      "printedPage": 29,
+      "cardHint": "printed 29, bird 2 of 4",
+      "box": [
+        4508,
+        1626,
+        5029,
+        2019
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1768,
+          638,
+          1972,
+          792
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean full-body profile",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "homotiainen",
+      "name": "hömötiainen",
+      "group": "lintu",
+      "kind": "new",
+      "resource": "nature_homotiainen.jpg",
+      "pdfPage": 6,
+      "printedPage": 29,
+      "cardHint": "printed 29, bird 3 of 4",
+      "box": [
+        3309,
+        2867,
+        3897,
+        3253
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1298,
+          1125,
+          1528,
+          1276
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean full-body profile",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    },
+    {
+      "id": "hippiainen",
+      "name": "hippiäinen",
+      "group": "lintu",
+      "kind": "new",
+      "resource": "nature_hippiainen.jpg",
+      "pdfPage": 6,
+      "printedPage": 29,
+      "cardHint": "printed 29, bird 4 of 4",
+      "box": [
+        4467,
+        3002,
+        4993,
+        3340
+      ],
+      "status": "approved-ai-visual-review",
+      "exclusions": [],
+      "boundsReview": {
+        "previewSize": [
+          2000,
+          1377
+        ],
+        "boxPreview": [
+          1752,
+          1178,
+          1958,
+          1310
+        ],
+        "exclusionsPreview": [],
+        "note": "Clean full-body profile",
+        "source": ".pane/prompts/environment-crop-bounds-reviewed.json"
+      },
+      "visualReview": {
+        "status": "bounds-reviewed; final original-resolution output review PENDING",
+        "proposedBy": [
+          "Agy Gemini4 source/page audit"
+        ],
+        "reviewedBy": [
+          "root GPT with image input: all 5 source grids + crop comparison"
+        ],
+        "isHuman": false,
+        "evidence": [
+          ".pane/prompts/environment-crop-bounds-reviewed.json",
+          "tmp/verify/environment/asset-work/grid/",
+          "tmp/verify/environment/asset-work/contacts/"
+        ],
+        "finalReview": {
+          "reviewer": "root GPT",
+          "inspected": [
+            "tmp/verify/environment/asset-work/contacts/contact-44.png"
+          ],
+          "result": "approved; AI visual review, not human"
+        }
+      }
+    }
   ],
   "cropRules": {
     "mustContain": "Only the single species' own illustration art. Trees may include their leaf/cone detail art when it is part of the same illustration region.",
-    "mustExclude": ["species name text", "captions", "card numbers", "page furniture/borders", "neighboring species art", "other cards' tracks or details"],
+    "mustExclude": [
+      "species name text",
+      "captions",
+      "card numbers",
+      "page furniture/borders",
+      "neighboring species art",
+      "other cards' tracks or details"
+    ],
     "anatomy": "Complete bodies: antennae, tails, legs, leaf tips. No clipping.",
     "rejectIf": "box smaller than 150x150 full-res px; box outside page; output long edge under 300px (unless --allow-small); box touches page edge (warn - possible clipping)"
   }

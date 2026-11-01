@@ -37,6 +37,8 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 MANIFEST_PATH = os.path.join(ROOT, 'tools', 'nature-crops', 'crop-manifest.json')
 
+EXCLUSION_FILL = (0xDB, 0xDC, 0xDB)  # #dbdcdb paper tone chosen by visual audit
+
 MIN_MEM_AVAILABLE_BYTES = 1024 * 1024 * 1024  # hard stop guard from the brief
 MIN_BOX_PX = 150          # full-res px; smaller is almost certainly a mistake
 MIN_OUT_LONG_EDGE = 300   # output px; smaller needs --allow-small
@@ -139,7 +141,7 @@ def extract_page_jpegs(pdf_path, pages, workdir, expect_sha):
     return out
 
 
-def validate_box(box, upright_w, upright_h, page_species):
+def validate_box(box, upright_w, upright_h, page_species, self_id):
     x0, y0, x1, y1 = box
     warns = []
     if not (0 <= x0 < x1 <= upright_w and 0 <= y0 < y1 <= upright_h):
@@ -150,6 +152,8 @@ def validate_box(box, upright_w, upright_h, page_species):
     if x0 <= 2 or y0 <= 2 or x1 >= upright_w - 2 or y1 >= upright_h - 2:
         warns.append('box touches page edge; check for clipped anatomy/page furniture')
     for other in page_species:
+        if other['id'] == self_id:
+            continue
         ob = other.get('box')
         if not ob:
             continue
@@ -161,6 +165,30 @@ def validate_box(box, upright_w, upright_h, page_species):
             if frac > 0.3:
                 warns.append(f'box overlaps {other["id"]} by {frac:.0%} (>30%)')
     return warns, (w, h)
+
+
+def validate_exclusions(exclusions, box, upright_w, upright_h, species_id):
+    """Exclusions are document-art clipping rectangles; warn if they leave the box."""
+    warns = []
+    x0, y0, x1, y1 = box
+    for i, e in enumerate(exclusions):
+        ex0, ey0, ex1, ey1 = e
+        if not (x0 <= ex0 < ex1 <= x1 and y0 <= ey0 < ey1 <= y1):
+            warns.append(f'exclusion {i} {e} not fully inside box {box} '
+                         f'(will be clipped to the box; verify intent)')
+        if (ex1 - ex0) * (ey1 - ey0) > 0.5 * (x1 - x0) * (y1 - y0):
+            warns.append(f'exclusion {i} covers >50% of the box; verify intent')
+    return warns
+
+
+def apply_exclusions(crop_upright, exclusions, box):
+    """Fill document-art regions with the audit paper color. Returns filled copy."""
+    out = crop_upright.copy()
+    d = ImageDraw.Draw(out)
+    x0, y0 = box[0], box[1]
+    for e in exclusions:
+        d.rectangle([e[0] - x0, e[1] - y0, e[2] - x0 - 1, e[3] - y0 - 1], fill=EXCLUSION_FILL)
+    return out
 
 
 def render_output(crop_upright, species_id):
@@ -202,6 +230,25 @@ def contact_sheet(records, out_path):
         sheet.paste(im, (cx + (cell - im.width) // 2, cy + (cell - im.height) // 2))
         draw.text((cx + 4, cy + cell + 2),
                   f"{rec['id']} {im.width}x{im.height}", fill='black', font=font)
+    sheet.save(out_path)
+
+
+def contact_sheet_native(records, out_path):
+    """Original-resolution labeled contact: outputs pasted at native pixel size."""
+    cols = 6
+    cell_w, cell_h, label_h = 720, 730, 34
+    rows = math.ceil(len(records) / cols)
+    sheet = Image.new('RGB', (cols * cell_w, rows * (cell_h + label_h)), 'white')
+    draw = ImageDraw.Draw(sheet)
+    font = load_font(20)
+    for i, rec in enumerate(records):
+        cx, cy = (i % cols) * cell_w, (i // cols) * (cell_h + label_h)
+        im = Image.open(rec['path'])
+        sheet.paste(im, (cx + (cell_w - im.width) // 2, cy + (cell_h - im.height) // 2))
+        n_ex = len(rec.get('exclusions', []))
+        draw.text((cx + 8, cy + cell_h + 6),
+                  f"{i+1}. {rec['id']} {im.width}x{im.height}" + (f" excl:{n_ex}" if n_ex else ""),
+                  fill='black', font=font)
     sheet.save(out_path)
 
 
@@ -261,7 +308,7 @@ def main():
         page_sha = sha256_file(page_jpegs[p])
         for s in species_on_page:
             box = tuple(s['box'])
-            warns, dims = validate_box(box, upright_w, upright_h, species_on_page)
+            warns, dims = validate_box(box, upright_w, upright_h, species_on_page, s['id'])
             if dims is None:
                 print(f'  {s["id"]}: REJECTED ->', '; '.join(warns))
                 continue
@@ -270,10 +317,20 @@ def main():
             if args.dry_run:
                 print(f'  {s["id"]}: box ok {box} -> {dims[0]}x{dims[1]} px upright (dry run)')
                 continue
+            exclusions = [tuple(e) for e in s.get('exclusions', [])]
+            if exclusions:
+                for w_ in validate_exclusions(exclusions, box, upright_w, upright_h, s['id']):
+                    print(f'  {s["id"]}: WARN: {w_}')
             side = upright_to_sideways_box(box, upright_w, upright_h, orig_w, orig_h)
             crop = page_img.crop(side)                # small copy
             up = crop.transpose(Image.Transpose.ROTATE_270)  # upright, small
             del crop
+            if exclusions:
+                spotdir = os.path.join(args.workdir, 'spotcheck')
+                os.makedirs(spotdir, exist_ok=True)
+                up.save(os.path.join(spotdir, f'{s["id"]}-unmasked-native.png'))
+                up = apply_exclusions(up, exclusions, box)
+                up.save(os.path.join(spotdir, f'{s["id"]}-masked-native.png'))
             try:
                 out, scaled = render_output(up, s['id'])
             except ValueError as e:
@@ -294,14 +351,23 @@ def main():
                 'sourcePdfSha256': src['sha256'], 'pdfPage': p,
                 'pageImageSha256': page_sha, 'rotationToUpright': 'CW90',
                 'boxUpright': list(box), 'boxSidewaysOriginal': list(side),
+                'exclusionsUpright': [list(e) for e in exclusions],
+                'exclusionFill': 'dbdcdb' if exclusions else None,
+                'boundsReview': {
+                    'previewSize': s.get('boundsReview', {}).get('previewSize'),
+                    'boxPreview': s.get('boundsReview', {}).get('boxPreview'),
+                    'exclusionsPreview': s.get('boundsReview', {}).get('exclusionsPreview'),
+                    'note': s.get('boundsReview', {}).get('note'),
+                    'source': '.pane/prompts/environment-crop-bounds-reviewed.json',
+                },
                 'cropSizeUprightPx': list(up.size),
                 'outputSizePx': list(out.size), 'downscaled': scaled,
                 'outputBytes': os.path.getsize(dst), 'outputSha256': out_sha,
                 'replacedFile': before,
-                'verifiedByHuman': s.get('verifiedByHuman', False),
+                'visualReview': s.get('visualReview'),
             }
             provenance['crops'] = [c for c in provenance['crops'] if c['id'] != s['id']] + [prov]
-            records.append({'id': s['id'], 'path': dst})
+            records.append({'id': s['id'], 'path': dst, 'exclusions': exclusions})
             print(f'  {s["id"]}: {box} -> {out.size[0]}x{out.size[1]} '
                   f'{os.path.getsize(dst)//1024} KiB {"(downscaled)" if scaled else "(native)"}')
             del up, out
@@ -323,10 +389,13 @@ def main():
     with open(prov_path, 'w', encoding='utf-8') as f:
         json.dump(provenance, f, indent=1, sort_keys=True)
     cs = os.path.join(args.workdir, 'contacts', f'contact-{len(records)}.png')
+    csn = os.path.join(args.workdir, 'contacts', f'contact-{len(records)}-native.png')
     os.makedirs(os.path.dirname(cs), exist_ok=True)
     contact_sheet(records, cs)
+    contact_sheet_native(records, csn)
     print(f'provenance: {prov_path}')
-    print(f'contact sheet (human review): {cs}')
+    print(f'contact sheets (visual review): {cs}')
+    print(f'native-resolution contact: {csn}')
 
 
 if __name__ == '__main__':

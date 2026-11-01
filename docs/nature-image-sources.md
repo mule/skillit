@@ -31,11 +31,18 @@ be redistributed (see `docs/nature-canonical-manifest.json` rights note).
 6. provenance JSON (source page hash, boxes, before/after hashes, sizes) into
    `tmp/verify/environment/asset-work/provenance/`, plus a labeled contact sheet.
 
-Boxes live in `tools/nature-crops/crop-manifest.json` and must be approved and
-visually verified by a human (root/Agy) using the grid aids in
-`tmp/verify/environment/asset-work/grid/` — the current agent cannot view
-images, so no bounds were auto-chosen and `drawable-nodpi` is unchanged until
-that approval step completes.
+Boxes live in `tools/nature-crops/crop-manifest.json`, applied from
+`.pane/prompts/environment-crop-bounds-reviewed.json` (private) after programmatic
+scale verification against the actual preview headers. Bounds were proposed by
+the Agy (Gemini 4) visual audit and independently reviewed by root (GPT, image
+input) on the source grids; the generated OpenCode agent itself cannot view
+images and only ran the verified pipeline. Reviewers are AI agents — no human
+approval is claimed anywhere. Three species carry document-art exclusion
+rectangles outside subject art (rauduskoivu, hirvi, peippo; paper fill
+`#dbdcdb`, per-audit tone), recorded per-crop in the provenance JSON with
+unmasked/masked spot-check pairs. Season/sex annotations (kesä/talvi, ♂) are
+original scientific annotations, kept as-is. The final original-resolution
+contact-44 review by root/Agy gates any verified status and the commit.
 
 ## Species → source page
 
@@ -72,7 +79,10 @@ ASCII ids above.
 
 - Agent-side (done): source hash verified; page/size checks; rotation
   cross-checked against parent-verified previews; transform self-test; grid aids
-  and non-semantic candidate hints generated for the human pass.
-- Human-side (pending, required): approve 44 boxes; inspect contact sheet and
-  native-pixel samples; then set `verifiedByHuman` in the manifest. Automated
-  shape checks are not semantic verification.
+  and non-semantic candidate hints generated for the review pass; reviewed
+  bounds applied after preview-scale verification (actual 2000×1377 headers).
+- Reviewer-side: bounds proposed by Agy (Gemini 4, image input) and reviewed by
+  root (GPT, image input) on all 5 source grids + first contact comparison;
+  final original-resolution contact-44 and exclusion spot-check review PENDING
+  before verified status. Automated shape checks are not semantic verification,
+  and no human approval is claimed.
