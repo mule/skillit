@@ -44,7 +44,7 @@ Species questions have the ID `species-<id>`. The wrong answer choices on concep
 
 | Item | Claim | Why it is uncertain |
 |---|---|---|
-| `metsamyyra` clue | "pitkä häntä" | From general knowledge a bank vole's tail is fairly short. Likely wrong; compare with p24 |
+| `metsamyyra` clue | "pitkä häntä" | Ambiguous, not shown to be wrong. Sources found so far do not settle it, and it may be relative to other voles; a tail claim needs p24. The Luke page on metsämyyrä confirms bud and bark food but does not discuss the tail |
 | `winter-flock` answer | Flocks spot predators more easily | Gives a reason; the reading notes only say that the birds join flocks |
 | `ant-roles` answer | Queens, workers and males | Not in the reading notes for p30–31 |
 | `hoof` answer | Two toes ending in large claws | Definition appears only in the JSON |

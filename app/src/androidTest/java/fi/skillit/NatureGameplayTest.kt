@@ -2,7 +2,12 @@ package fi.skillit
 
 import android.os.SystemClock
 import android.view.KeyEvent
+import androidx.activity.compose.setContent
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertWidthIsEqualTo
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.unit.dp
 import android.graphics.Bitmap
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.File
@@ -99,12 +104,12 @@ class NatureGameplayTest {
         assertTrue(runBlocking { repository.load().events.isEmpty() })
     }
 
-    private fun enterClassificationChapter() {
+    private fun enterEnvironmentInOwnedViewport() {
         val repository = ProgressRepository(compose.activity.applicationContext.skillitDataStore)
-        runBlocking { repository.reset(muted = false) }
-        compose.activityRule.scenario.recreate()
+        runBlocking { repository.save(SavedProgress()) }
+        compose.runOnUiThread { compose.activity.setContent { OwnedRouteViewport(repository) } }
+        compose.onNodeWithTag("route-viewport").assertWidthIsEqualTo(360.dp).assertHeightIsEqualTo(640.dp)
         tap("Ympäristöoppi · luontoretket")
-        tap("Eliökunnan luokittelu")
     }
 
     private fun systemBack() {
@@ -115,68 +120,78 @@ class NatureGameplayTest {
         compose.waitForIdle()
     }
 
+    private fun waitForVisible(label: String) {
+        compose.waitUntilAtLeastOneExists(hasText(label), 10_000)
+        // No scrolling here: the route transition must reveal the content itself.
+        compose.onNodeWithText(label).assertIsDisplayed()
+    }
+
     @Test fun chapterShowsReadingBeforePractice() {
-        enterClassificationChapter()
-        compose.onNodeWithText("Kirjan sivut 6–7").assertExists()
+        enterEnvironmentInOwnedViewport()
+        tap("Eliökunnan luokittelu")
+        waitForVisible("Kirjan sivut 6–7")
         compose.onNodeWithText("Eliöitä ovat eläimet, kasvit, sienet, alkueliöt ja bakteerit.").assertExists()
         compose.onNodeWithText("Aloita harjoitus (2 tehtävää)").assertExists()
     }
 
     @Test fun speciesChapterReadingShowsItsCards() {
-        val repository = ProgressRepository(compose.activity.applicationContext.skillitDataStore)
-        runBlocking { repository.reset(muted = false) }
-        compose.activityRule.scenario.recreate()
-        tap("Ympäristöoppi · luontoretket")
+        enterEnvironmentInOwnedViewport()
         tap("Niityn ja pientareen eläimiä")
+        waitForVisible("Kirjan sivut 12–13")
         compose.onNodeWithText("kontiainen").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Kontiainen syö kastematoja ja toukkia.").assertExists()
     }
 
     @Test fun contentAwaitingValidationCannotBeOpened() {
-        val repository = ProgressRepository(compose.activity.applicationContext.skillitDataStore)
-        runBlocking { repository.reset(muted = false) }
-        compose.activityRule.scenario.recreate()
-        tap("Ympäristöoppi · luontoretket")
-        compose.onNodeWithText("Eliökunnan luokittelu").assertExists()
+        enterEnvironmentInOwnedViewport()
+        compose.waitUntilAtLeastOneExists(hasText("Eliökunnan luokittelu"), 10_000)
         compose.onNodeWithText("Puita").assertDoesNotExist()
         compose.onNodeWithText("Ravintoketju alkaa kasveista").assertDoesNotExist()
     }
 
     @Test fun chapterRoundGivesFeedbackAndLeadsToNextChapter() {
-        enterClassificationChapter()
+        enterEnvironmentInOwnedViewport()
+        tap("Eliökunnan luokittelu")
         tap("Aloita harjoitus (2 tehtävää)")
-        compose.onNodeWithText("Mihin eliökuntaan sieni kuuluu?").assertExists()
+        waitForVisible("Mihin eliökuntaan sieni kuuluu?")
         tap("kasveihin")
         compose.onNodeWithText("Oikea vastaus: sieniin").assertExists()
         compose.onNodeWithText("Lähde: käyttäjän toimittama ympäristöopin sivu 6.").assertExists()
         tap("Jatka")
+        waitForVisible("Mihin selkärankaisten ryhmään sammakko kuuluu?")
         tap("sammakkoeläimiin")
         compose.onNodeWithText("Oikein!").assertExists()
         tap("Jatka")
-        compose.onNodeWithText("Tunnistit oikein 1/2 tehtävää. Voit tutkia lajeja uudelleen omaan tahtiisi.").assertExists()
+        waitForVisible("Tunnistit oikein 1/2 tehtävää. Voit tutkia lajeja uudelleen omaan tahtiisi.")
         tap("Seuraava luku: Niityt, pihat ja pientareet ovat valoisia kasvupaikkoja")
-        compose.onNodeWithText("Kirjan sivut 8–9").assertExists()
+        waitForVisible("Kirjan sivut 8–9")
     }
 
     @Test fun backStepsFromPracticeToReadingToListToHome() {
-        enterClassificationChapter()
+        enterEnvironmentInOwnedViewport()
+        tap("Eliökunnan luokittelu")
         tap("Aloita harjoitus (2 tehtävää)")
-        compose.waitUntilAtLeastOneExists(hasText("Mihin eliökuntaan sieni kuuluu?"), 10_000)
+        waitForVisible("Mihin eliökuntaan sieni kuuluu?")
         systemBack()
-        compose.waitUntilAtLeastOneExists(hasText("Kirjan sivut 6–7"), 10_000)
+        waitForVisible("Kirjan sivut 6–7")
         systemBack()
-        compose.waitUntilAtLeastOneExists(hasText("Valitse luku. Voit lukea ja harjoitella omaan tahtiisi."), 10_000)
+        waitForVisible("Valitse luku. Voit lukea ja harjoitella omaan tahtiisi.")
         systemBack()
         compose.waitUntilAtLeastOneExists(hasText("Ympäristöoppi · luontoretket"), 10_000)
     }
 
+    // Production content on purpose: recreation would drop the owned wrapper, and with it the
+    // position-based saveable keys. This test makes no visibility claims, so it needs no viewport.
     @Test fun chapterPracticeSurvivesRecreationAndLeavesMusicSaveUntouched() {
-        enterClassificationChapter()
+        val repository = ProgressRepository(compose.activity.applicationContext.skillitDataStore)
+        runBlocking { repository.reset(muted = false) }
+        compose.activityRule.scenario.recreate()
+        tap("Ympäristöoppi · luontoretket")
+        tap("Eliökunnan luokittelu")
         tap("Aloita harjoitus (2 tehtävää)")
         tap("kasveihin")
         compose.activityRule.scenario.recreate()
         compose.waitUntilAtLeastOneExists(hasText("Oikea vastaus: sieniin"), 10_000)
-        val repository = ProgressRepository(compose.activity.applicationContext.skillitDataStore)
         val saved = runBlocking { repository.load() }
         assertTrue(saved.events.isEmpty() && saved.practice.isEmpty())
     }

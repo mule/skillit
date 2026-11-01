@@ -4,16 +4,8 @@ import android.graphics.Bitmap
 import android.os.SystemClock
 import android.view.KeyEvent
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import fi.skillit.engine.ExerciseSession
@@ -32,17 +24,7 @@ class RouteViewportTest {
     private fun seed(saved: SavedProgress) {
         val repository = ProgressRepository(compose.activity.applicationContext.skillitDataStore)
         runBlocking { repository.save(saved) }
-        compose.runOnUiThread { compose.activity.setContent {
-            // Own the regression viewport and text scale instead of inheriting the CI device's.
-            val density = LocalDensity.current.density
-            CompositionLocalProvider(LocalDensity provides Density(density, fontScale = 1.5f)) {
-                Box(Modifier.fillMaxSize()) {
-                    Box(Modifier.requiredSize(360.dp, 640.dp).testTag("route-viewport")) {
-                        SkillitTheme { SkillitApp(repository) }
-                    }
-                }
-            }
-        } }
+        compose.runOnUiThread { compose.activity.setContent { OwnedRouteViewport(repository) } }
         compose.onNodeWithTag("route-viewport").assertWidthIsEqualTo(360.dp).assertHeightIsEqualTo(640.dp)
     }
 
@@ -136,5 +118,35 @@ class RouteViewportTest {
         tap("Aloita harjoitus (8 tehtävää)")
         capture("environment-practice")
         compose.onNodeWithText("Mikä laji kuvassa on?").assertIsDisplayed()
+    }
+
+    @Test fun advancingChapterPracticeFromScrolledFeedbackRevealsNextQuestion() {
+        seed(SavedProgress())
+        enterFromScrolledMap("Ympäristöoppi · luontoretket")
+        tap("Niityn ja pientareen eläimiä")
+        tap("Aloita harjoitus (8 tehtävää)")
+        tap("heinäsirkka")
+        compose.onNodeWithText("Jatka").performScrollTo()
+        compose.onNodeWithText("Tehtävä 1/8 · 1 oikein").assertIsNotDisplayed()
+        compose.onNodeWithText("Jatka").performClick()
+        compose.waitUntilAtLeastOneExists(hasText("Tehtävä 2/8 · 1 oikein"), 10_000)
+        capture("environment-next-question")
+        compose.onNodeWithText("Tehtävä 2/8 · 1 oikein").assertIsDisplayed()
+    }
+
+    @Test fun systemBackFromScrolledChapterReadingRevealsChapterList() {
+        seed(SavedProgress())
+        enterFromScrolledMap("Ympäristöoppi · luontoretket")
+        tap("Niityn ja pientareen eläimiä")
+        compose.waitUntilAtLeastOneExists(hasText("kontiainen"), 10_000)
+        compose.onNodeWithText("kontiainen").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Kirjan sivut 12–13").assertIsNotDisplayed()
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        val downTime = SystemClock.uptimeMillis()
+        assertTrue(automation.injectInputEvent(KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK, 0), true))
+        assertTrue(automation.injectInputEvent(KeyEvent(downTime, SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK, 0), true))
+        compose.waitUntilAtLeastOneExists(hasText("Valitse luku. Voit lukea ja harjoitella omaan tahtiisi."), 10_000)
+        capture("environment-back-to-list")
+        compose.onNodeWithText("Valitse luku. Voit lukea ja harjoitella omaan tahtiisi.").assertIsDisplayed()
     }
 }
