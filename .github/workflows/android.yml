@@ -25,8 +25,9 @@ jobs:
           if [[ "$EVENT" == pull_request ]]; then
             scripts/check-no-scans.sh --range "$PR_BASE..$PR_HEAD"
           elif [[ -z "$BEFORE" || "$BEFORE" =~ ^0+$ ]] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
-            # New branch (or force push over unknown history): everything not on main.
-            scripts/check-no-scans.sh --range "$GITHUB_SHA" --not origin/main
+            # New ref, or force push over history we can't see: fail closed and
+            # check the whole history of the pushed commit (cheap for this repo).
+            scripts/check-no-scans.sh --range "$GITHUB_SHA"
           else
             scripts/check-no-scans.sh --range "$BEFORE..$GITHUB_SHA"
           fi

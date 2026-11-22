@@ -127,11 +127,13 @@ child's handwriting, and this repo is public: anything pushed is already publish
 
 **What the guard checks.** `scripts/check-no-scans.sh` rejects, anywhere in the tree:
 any `*.scan.pdf`; any PDF, JPG/JPEG, PNG, HEIC/HEIF, TIF/TIFF, WebP, GIF, BMP, AVIF,
-DNG, ZIP, 7z or RAR file; extensionless files whose content is an image, PDF or
-archive; and file names containing a newline. The only exceptions are exact paths in
+DNG, ZIP, 7z or RAR file; any other file whose content (`file --mime-type`) is an
+image, PDF or archive; and file names containing a newline. Merge commits are
+checked against every parent, and a git error or missing `file` fails the check. The only exceptions are exact paths in
 `scripts/scan-allowlist.txt` (owned via `.github/CODEOWNERS`; never `*.scan.pdf`).
 The `nature_*.jpg` illustrations are allowlisted pending an image-rights decision (#19).
-It is a filename/type check, not image recognition: renaming a scan to `.txt` gets past it.
+It checks names and file types, not what an image shows: a scan inside an
+unrecognised container format, or an allowlisted path overwritten with a scan, gets past it.
 
 - **Locally (the only layer that stops a scan before it is public):** enable the
   hooks once per clone with `git config core.hooksPath scripts/hooks`. `pre-commit`

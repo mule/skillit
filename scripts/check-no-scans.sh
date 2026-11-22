@@ -7,8 +7,9 @@
 #   - contains a newline (always),
 #   - has an image/PDF/archive extension (see EXT_RE) and is not listed exactly
 #     in scripts/scan-allowlist.txt,
-#   - has no extension and `file --mime-type` says image/*, PDF or an archive,
-#     and it is not allowlisted.
+#   - has any other name but `file --mime-type` says image/*, PDF or an archive,
+#     and it is not allowlisted (so renaming page.jpg to page.txt doesn't help).
+# It fails closed: a git error or missing `file` command is a failure.
 #
 # Usage:
 #   scripts/check-no-scans.sh [-C dir]                 every file in the index (tracked + staged)
@@ -21,6 +22,7 @@ EXT_RE='\.(pdf|jpe?g|png|hei[cf]|tiff?|webp|gif|bmp|avif|dng|zip|7z|rar)$'
 MIME_RE='^(image/|application/(pdf|zip|x-7z-compressed|x-rar|vnd\.rar))'
 ALLOWLIST=scripts/scan-allowlist.txt
 
+command -v file >/dev/null || { echo "check-no-scans: 'file' command not found" >&2; exit 2; }
 if [[ "${1:-}" == -C ]]; then cd "$2"; shift 2; fi
 cd "$(git rev-parse --show-toplevel)"
 
@@ -37,31 +39,43 @@ bad=()
 
 # check_path <path> <blob-spec>   blob-spec is what `git cat-file blob` takes (":path" or "commit:path")
 check_path() {
-  local path="$1" blob="$2" name lower
+  local path="$1" blob="$2" lower
   if [[ "$path" == *$'\n'* ]]; then bad+=("$path (newline in name)"); return; fi
   lower="${path,,}"
   if [[ "$lower" == *.scan.pdf ]]; then bad+=("$path"); return; fi
   [[ -n "${allowed[$path]-}" ]] && return
   if [[ "$lower" =~ $EXT_RE ]]; then bad+=("$path"); return; fi
-  name="${path##*/}"
-  if [[ "$name" != *.* ]]; then
-    local mime
-    mime="$(git cat-file blob "$blob" 2>/dev/null | file --mime-type -b - || true)"
-    if [[ "$mime" =~ $MIME_RE ]]; then bad+=("$path ($mime)"); fi
+  local mime
+  if ! mime="$(git cat-file blob "$blob" | file --mime-type -b -)" || [[ -z "$mime" ]]; then
+    bad+=("$path (could not read content)"); return
   fi
+  if [[ "$mime" =~ $MIME_RE ]]; then bad+=("$path ($mime)"); fi
 }
+
+# list_or_die <file> <cmd...>  writes a git listing to <file>, exiting on failure
+# (a process substitution would silently swallow the error and pass).
+list_or_die() {
+  local out="$1"; shift
+  if ! "$@" >"$out"; then echo "check-no-scans: '$*' failed" >&2; exit 2; fi
+}
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
 
 if [[ "${1:-}" == --range ]]; then
   shift
+  list_or_die "$work/commits" git rev-list "$@"
   while IFS= read -r commit; do
+    # -m: diff merge commits against every parent, so merges can't hide files.
+    list_or_die "$work/paths" git diff-tree -r -m --root --no-commit-id --name-only -z --diff-filter=AMRC "$commit"
     while IFS= read -r -d '' path; do
       check_path "$path" "$commit:$path"
-    done < <(git diff-tree -r --root --no-commit-id --name-only -z --diff-filter=AMRC "$commit")
-  done < <(git rev-list "$@")
+    done <"$work/paths"
+  done <"$work/commits"
 else
+  list_or_die "$work/paths" git ls-files --cached -z
   while IFS= read -r -d '' path; do
     check_path "$path" ":$path"
-  done < <(git ls-files --cached -z)
+  done <"$work/paths"
 fi
 
 if ((${#bad[@]})); then

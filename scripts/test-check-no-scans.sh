@@ -69,6 +69,13 @@ expect 1 "F3 extensionless PDF content fails" "$check" -C "$r"
 r="$(new_repo)"; printf '#!/bin/sh\necho hi\n' >"$r/tool"; add "$r"
 expect 0 "F3 extensionless script passes" "$check" -C "$r"
 
+r="$(new_repo)"; png "$r/docs/page14.txt"; add "$r"
+expect 1 "F3 image renamed to .txt fails (content sniff)" "$check" -C "$r"
+r="$(new_repo)"; (cd "$r" && echo x >inner.txt && git hash-object -w inner.txt >/dev/null && git archive --format=zip -o w.jar "$(printf '100644 blob %s\tinner.txt\n' "$(git hash-object inner.txt)" | git mktree)" && rm inner.txt); add "$r"
+expect 1 "F3 zip with other extension fails" "$check" -C "$r"
+r="$(new_repo)"; echo 'x' >"$r/docs/a.md"; add "$r"
+expect 1 "missing 'file' command fails closed" env PATH="$tmp/nofile" /bin/bash "$check" -C "$r"
+
 # --- F4: newline in name, exact match only
 r="$(new_repo)"; echo x >"$r/docs/diagram.png"; echo docs/diagram.png >"$r/scripts/scan-allowlist.txt"
 echo x >"$r/docs/diagram.png"$'\n'".png"; add "$r"
@@ -90,6 +97,14 @@ expect 0 "F2 clean range passes" "$check" -C "$r" --range "$base..HEAD"
 r="$(new_repo)"; commit "$r" base; base="$(git -C "$r" rev-parse HEAD)"
 echo x >"$r/docs/a.md"; commit "$r"; git -C "$r" mv docs/a.md docs/a.jpg; commit "$r" rename
 expect 1 "F2 range catches rename to image" "$check" -C "$r" --range "$base..HEAD"
+
+expect 1 "F2 bad range fails closed" "$check" -C "$r" --range no-such-ref..HEAD
+r="$(new_repo)"; commit "$r" base
+git -C "$r" checkout -qb side; echo x >"$r/docs/s.md"; commit "$r" side
+git -C "$r" checkout -q -; echo x >"$r/docs/m.md"; commit "$r" main2; base="$(git -C "$r" rev-parse HEAD)"
+git -C "$r" merge -q --no-commit side >/dev/null 2>&1; echo x >"$r/docs/evil.jpg"; git -C "$r" add -A
+git -C "$r" commit -qm merge --no-verify >/dev/null
+expect 1 "F2 scan hidden in a merge commit fails" "$check" -C "$r" --range "$base..HEAD"
 
 # --- F2: hooks
 hooks="$here/hooks"
