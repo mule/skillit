@@ -1,6 +1,7 @@
 package fi.skillit
 
 import android.os.SystemClock
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -10,7 +11,6 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
 import fi.skillit.ink.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +21,7 @@ import org.junit.Test
 import java.io.File
 
 class InkCellsTest {
+    private companion object { const val TAG = "InkCellsTest" }
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
 
     private fun event(down: Long, action: Int, x: Float, y: Float, tool: Int = MotionEvent.TOOL_TYPE_STYLUS): MotionEvent {
@@ -46,29 +47,32 @@ class InkCellsTest {
     }
 
     /**
-     * Background the activity mid-stroke and come back. The stroke in progress is dropped and writing works
-     * again. On a real tablet the front-buffered layer is also released while hidden and re-created on resume.
-     * Emulators never create that layer: on the API 35 CI emulator graphics-core's front buffer crashes hwui's
-     * RenderThread as soon as it is created, even with the window visible, so the layer checks run on devices only.
+     * Background the activity mid-stroke (a real onPause/onStop, as when the child presses Home) and come back.
+     * The stroke in progress is dropped and writing works again. On a real tablet the front-buffered layer is
+     * also released while hidden and re-created on resume. Emulators never create that layer: on the API 35 CI
+     * emulator graphics-core's front buffer crashes hwui's RenderThread as soon as it is created, even with the
+     * window visible, so the layer checks run on devices only; the log says which (tag `InkCellsTest`).
      */
     @Test fun backgroundingMidStrokeReleasesAndRestoresTheLiveLayer() {
         val controller = InkBoxesController()
         rule.setContent { SkillitTheme { InkBoxes(2, controller, boxSize = 150.dp) } }
         rule.waitForIdle()
         val v = inkViews().single()
-        assertEquals(v.lowLatency, v.hasLiveLayer)
+        Log.i(TAG, if (v.lowLatency) "live layer checks: RUN (front-buffered layer on)" else "live layer checks: SKIPPED (no front buffer, emulator)")
+        /** Asserts the front-buffered layer state, only where one exists; elsewhere it would pass vacuously. */
+        fun layer(msg: String, expected: Boolean) = rule.runOnUiThread { if (v.lowLatency) assertEquals(msg, expected, v.hasLiveLayer) else assertFalse(v.hasLiveLayer) }
+        layer("front buffer created", true)
         stroke(v, 60f)
         val down = SystemClock.uptimeMillis()
         rule.runOnUiThread {
             v.dispatchTouchEvent(event(down, MotionEvent.ACTION_DOWN, 220f, 20f))
             v.dispatchTouchEvent(event(down, MotionEvent.ACTION_MOVE, 220f, 70f))
         }
-        rule.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
-        rule.runOnUiThread { assertFalse("front buffer released while hidden", v.hasLiveLayer) }  // always true when off
-        rule.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
-        rule.waitForIdle()
+        rule.background()
+        layer("front buffer released while stopped", false)
+        rule.foreground()
+        layer("front buffer back on resume", true)
         rule.runOnUiThread {
-            assertEquals("front buffer back on resume (devices)", v.lowLatency, v.hasLiveLayer)
             // The rest of the interrupted stroke must not commit anything.
             v.dispatchTouchEvent(event(down, MotionEvent.ACTION_MOVE, 220f, 120f))
             v.dispatchTouchEvent(event(down, MotionEvent.ACTION_UP, 220f, 140f))
@@ -77,10 +81,12 @@ class InkCellsTest {
         assertEquals("finished ink kept, interrupted stroke dropped", 1, v.strokes.size)
         stroke(v, 230f)
         assertEquals(2, v.strokes.size)
-        // A few more pause/resume cycles with ink on screen: no crash.
-        repeat(3) {
-            rule.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
-            rule.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        // A few more stop/resume cycles with ink on screen: no crash, layer released and restored each time.
+        repeat(3) { i ->
+            rule.background()
+            layer("released, cycle $i", false)
+            rule.foreground()
+            layer("restored, cycle $i", true)
         }
         rule.waitForIdle()
         assertEquals(2, v.strokes.size)
