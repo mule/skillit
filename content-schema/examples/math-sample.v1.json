@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "id": "math-sample",
+  "subject": "math",
+  "grade": 4,
+  "version": 1,
+  "title": "Kertolaskua – esimerkkipaketti",
+  "language": "fi",
+  "sourceRef": { "chapter": 2 },
+  "units": [
+    {
+      "id": "times-tables",
+      "title": "Kertotaulut",
+      "sourceRef": { "chapter": 2, "lesson": 14 },
+      "exercises": [
+        {
+          "id": "tt-7x8",
+          "prompt": "Laske 7 · 8.",
+          "hint": "7 · 8 on sama kuin 7 · 4 kaksi kertaa.",
+          "explanation": "7 · 8 = 56.",
+          "answer": { "type": "numeric", "expected": 56 },
+          "expression": "7 * 8"
+        },
+        {
+          "id": "tt-missing",
+          "prompt": "Mikä luku puuttuu? 6 · ☐ = 42",
+          "hint": "Käy läpi kuuden kertotaulua.",
+          "explanation": "6 · 7 = 42, joten puuttuva luku on 7.",
+          "answer": { "type": "missing-factor", "factors": [6, null], "product": 42 },
+          "expression": "6 * 7"
+        },
+        {
+          "id": "tt-table",
+          "prompt": "Täydennä kertotaulukko.",
+          "hint": "Kerro rivin luku sarakkeen luvulla.",
+          "explanation": "3 · 4 = 12 ja 5 · 6 = 30.",
+          "answer": { "type": "fill-table", "rows": [
+            [ { "type": "given", "text": "·" }, { "type": "given", "text": "4" }, { "type": "given", "text": "6" } ],
+            [ { "type": "given", "text": "3" }, { "type": "blank", "id": "b3x4", "expected": 12, "expression": "3 * 4" }, { "type": "given", "text": "18" } ],
+            [ { "type": "given", "text": "5" }, { "type": "given", "text": "20" }, { "type": "blank", "id": "b5x6", "expected": 30, "expression": "5 * 6" } ]
+          ] }
+        },
+        {
+          "id": "tt-generated",
+          "prompt": "Laske 9 · 6.",
+          "hint": "9 · 6 on 10 · 6 miinus 6.",
+          "explanation": "9 · 6 = 54.",
+          "answer": { "type": "numeric", "expected": 54 },
+          "expression": "9 * 6",
+          "generator": { "family": "times-table", "params": { "table": 9 }, "seed": 42 }
+        }
+      ]
+    },
+    {
+      "id": "column",
+      "title": "Allekkain kertominen",
+      "sourceRef": { "chapter": 2, "lesson": 21 },
+      "exercises": [
+        {
+          "id": "col-23x4",
+          "prompt": "Laske allekkain 23 · 4.",
+          "hint": "Aloita ykkösistä: 4 · 3. Kirjoita muistinumero kymmenten yläpuolelle.",
+          "explanation": "4 · 3 = 12, kirjoita 2 ja muista 1. 4 · 2 + 1 = 9. Vastaus on 92.",
+          "answer": { "type": "column-multiplication", "factors": [23, 4], "cells": [
+            { "id": "r0", "kind": "result", "row": 0, "column": 0, "expected": 2 },
+            { "id": "c0.1", "kind": "carry", "row": 0, "column": 1, "expected": 1, "required": false },
+            { "id": "r1", "kind": "result", "row": 0, "column": 1, "expected": 9 }
+          ] },
+          "expression": "23 * 4"
+        }
+      ]
+    },
+    {
+      "id": "order",
+      "title": "Laskujärjestys",
+      "sourceRef": { "chapter": 2, "lesson": 26, "pages": [60] },
+      "exercises": [
+        {
+          "id": "ord-1",
+          "prompt": "Laske vaiheittain 3 + 4 · 5.",
+          "hint": "Kertolasku lasketaan ennen yhteenlaskua.",
+          "explanation": "Ensin 4 · 5 = 20, sitten 3 + 20 = 23.",
+          "answer": { "type": "steps", "values": [20, 23], "labels": ["4 · 5", "3 + 20"] },
+          "expression": "3 + 4 * 5"
+        },
+        {
+          "id": "ord-word",
+          "prompt": "Kuinka monta jalkaa on kolmella koiralla ja kahdella kanalla?",
+          "hint": "Koiralla on 4 jalkaa ja kanalla 2.",
+          "explanation": "3 · 4 + 2 · 2 = 12 + 4 = 16.",
+          "answer": { "type": "choice", "choices": [ { "id": "a", "label": "10" }, { "id": "b", "label": "16" }, { "id": "c", "label": "20" } ], "correctId": "b" },
+          "expression": "3 * 4 + 2 * 2"
+        }
+      ]
+    }
+  ]
+}
