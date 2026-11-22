@@ -21,8 +21,8 @@ class InkBoxesController {
     /** Ink revision; compare before and after an async step to drop stale results. */
     val revision: Int get() = view?.revision ?: -1
     fun clear() { view?.clear() }
-    /** Removes exactly [done] (e.g. strokes already saved) and keeps anything written since. */
-    fun remove(done: List<InkStroke>) { view?.let { v -> if (v.strokes == done) v.clear() else v.restore(v.strokes.filterNot { it in done }) } }
+    /** Removes exactly [done] (e.g. strokes already saved) and keeps anything written since, even a stroke in progress. */
+    fun remove(done: List<InkStroke>) { view?.removeFinished(done) }
     /** Box index → that box's strokes, moved so the box's top-left corner is the origin. */
     fun strokesByBox(): Map<Int, List<InkStroke>> {
         val r = row ?: return emptyMap()

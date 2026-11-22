@@ -86,6 +86,23 @@ class InkInputTest {
         assertTrue(view.strokes.isEmpty())
     }
 
+    @Test fun penHoverCancelsAFingerStrokeInProgress() {
+        showBoxes()
+        rule.runOnUiThread {
+            val t = SystemClock.uptimeMillis()
+            view.dispatchTouchEvent(event(t, MotionEvent.ACTION_DOWN, box(0), 20f, MotionEvent.TOOL_TYPE_FINGER))
+            view.dispatchTouchEvent(event(t, MotionEvent.ACTION_MOVE, box(0), 60f, MotionEvent.TOOL_TYPE_FINGER))
+            // Called directly: synthetic hover events are not always routed to onHoverEvent.
+            view.onHoverEvent(event(t, MotionEvent.ACTION_HOVER_ENTER, box(1), 50f, MotionEvent.TOOL_TYPE_STYLUS))
+            view.dispatchTouchEvent(event(t, MotionEvent.ACTION_MOVE, box(0), 100f, MotionEvent.TOOL_TYPE_FINGER))
+            view.dispatchTouchEvent(event(t, MotionEvent.ACTION_UP, box(0), 120f, MotionEvent.TOOL_TYPE_FINGER))
+        }
+        rule.waitForIdle()
+        assertTrue("palm stroke dropped when the pen came near", view.strokes.isEmpty())
+        draw(box(1), 20f, box(1), 100f)
+        assertEquals("the pen still writes", 1, view.strokes.size)
+    }
+
     @Test fun palmCancelledBySystemLeavesNoInk() {
         showBoxes()
         draw(box(0), 20f, box(0), 100f, cancel = true)
@@ -190,11 +207,23 @@ class InkInputTest {
         rule.onNodeWithTag("digit-1").performScrollTo().assertIsNotEnabled().performClick()
         rule.onNodeWithTag("save").assertIsNotEnabled().performClick()
         rule.waitForIdle()
-        // New ink written during the wait must survive the save's completion.
-        writeIn(recorderView(), x = 200f)
+        // Stroke B starts during the wait, and the save completes between B's DOWN and UP: B must survive.
+        val v = recorderView()
+        val bDown = SystemClock.uptimeMillis()
+        rule.runOnUiThread {
+            v.dispatchTouchEvent(event(bDown, MotionEvent.ACTION_DOWN, 200f, 40f, MotionEvent.TOOL_TYPE_STYLUS))
+            v.dispatchTouchEvent(event(bDown, MotionEvent.ACTION_MOVE, 200f, 120f, MotionEvent.TOOL_TYPE_STYLUS))
+        }
         fake.gate.complete(Unit)
         rule.waitUntil(5_000) { lines(dir).isNotEmpty() }
         rule.waitForIdle()
+        assertTrue("sample A removed while B is still being written", v.strokes.isEmpty())
+        rule.runOnUiThread {
+            v.dispatchTouchEvent(event(bDown, MotionEvent.ACTION_MOVE, 200f, 200f, MotionEvent.TOOL_TYPE_STYLUS))
+            v.dispatchTouchEvent(event(bDown, MotionEvent.ACTION_UP, 200f, 250f, MotionEvent.TOOL_TYPE_STYLUS))
+        }
+        rule.waitForIdle()
+        assertEquals("B finished whole", 4, v.strokes.single().points.size)
         assertEquals(1, fake.calls)
         assertEquals(1, lines(dir).size)
         assertEquals(0, InkSampleCodec.decode(lines(dir).single())!!.label)

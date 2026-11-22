@@ -80,6 +80,17 @@ class DigitInkView(context: Context, boxCount: Int) : FrameLayout(context), InPr
         invalidate(); changed()
     }
 
+    /**
+     * Removes the finished strokes in [done] (e.g. a saved sample) and leaves everything else alone, including
+     * a stroke that is being written right now (Codex re-check should-fix 2).
+     */
+    fun removeFinished(done: List<InkStroke>) {
+        val gone = written.filter { it.ink in done }.toSet()
+        if (gone.isEmpty()) return
+        written.removeAll(gone); pending.values.removeAll(gone)
+        invalidate(); changed()
+    }
+
     /** Replaces the ink, e.g. when restoring a saved attempt. Restored strokes are drawn as thin lines. */
     fun restore(ink: List<InkStroke>) { clear(); ink.forEach { written += Written(it) }; invalidate(); changed() }
 
@@ -92,6 +103,12 @@ class DigitInkView(context: Context, boxCount: Int) : FrameLayout(context), InPr
     override fun onHoverEvent(event: MotionEvent): Boolean {
         val tool = event.getToolType(0)
         policy.onHover(tool)
+        // A pen coming near while a finger is writing: that finger is a palm or resting hand. Drop its stroke now,
+        // before it lifts, so it is never committed (Codex re-check should-fix 1).
+        if (policy.isPen(tool) && activePointer != -1 && !activeIsPen) {
+            activeId?.let { live.cancelStroke(it, event) }
+            activePointer = -1; activeId = null; activePoints = mutableListOf(); erasing = false
+        }
         if (event.actionMasked == MotionEvent.ACTION_HOVER_EXIT || !policy.isPen(tool)) { hoverX = Float.NaN }
         else { hoverX = event.x; hoverY = event.y; hoverEraser = policy.isEraser(tool, event.buttonState) }
         invalidate()
