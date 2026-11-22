@@ -84,8 +84,8 @@ class CoachEnvironment(
 @Stable
 class CoachPad {
     var strokes by mutableStateOf<List<InkStroke>>(emptyList())
-    var boxWidth by mutableStateOf(0f)
-    var boxHeight by mutableStateOf(0f)
+    var boxWidth by mutableFloatStateOf(0f)
+    var boxHeight by mutableFloatStateOf(0f)
     /** Set by the surface: wipes its own ink too. */
     var onClear: () -> Unit = {}
     fun clear() { strokes = emptyList(); onClear() }
@@ -184,7 +184,7 @@ fun CoachFeedback(report: LegibilityReport?, modifier: Modifier = Modifier, trac
  */
 @Composable
 fun ClarityMoment(prompt: ClarityPrompt, env: CoachEnvironment, onClose: () -> Unit, seconds: Int = 10) {
-    var phase by rememberSaveable(prompt) { mutableStateOf(0) } // 0 offer, 1 writing, 2 done
+    var phase by rememberSaveable(prompt) { mutableIntStateOf(0) } // 0 offer, 1 writing, 2 done
     var report by remember(prompt) { mutableStateOf<LegibilityReport?>(null) }
     val pad = remember(prompt) { CoachPad() }
     val scope = rememberCoroutineScope()
@@ -210,7 +210,7 @@ fun ClarityMoment(prompt: ClarityPrompt, env: CoachEnvironment, onClose: () -> U
                     }
                 }
                 1 -> {
-                    var left by remember { mutableStateOf(seconds * 1000L) }
+                    var left by remember { mutableLongStateOf(seconds * 1000L) }
                     LaunchedEffect(Unit) {
                         while (left > 0) { delay(100); left -= 100 }
                         if (pad.strokes.isEmpty()) onClose() else finish()
@@ -244,9 +244,9 @@ private enum class StudioStep { HOME, TRACE, MEMORY, WARMUP, WARMUP_DONE }
 @Composable
 fun DigitStudio(env: CoachEnvironment, onBack: () -> Unit) {
     var step by rememberSaveable { mutableStateOf(StudioStep.HOME) }
-    var digit by rememberSaveable { mutableStateOf(0) }
+    var digit by rememberSaveable { mutableIntStateOf(0) }
     var warmUp by rememberSaveable { mutableStateOf("") }
-    var index by rememberSaveable { mutableStateOf(0) }
+    var index by rememberSaveable { mutableIntStateOf(0) }
     var warmScores by rememberSaveable { mutableStateOf("") }
     var days by remember { mutableStateOf<List<DigitDay>?>(null) }
     var showModel by rememberSaveable(step, digit, index) { mutableStateOf(false) }
