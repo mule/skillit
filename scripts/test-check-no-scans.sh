@@ -76,6 +76,27 @@ expect 1 "F3 zip with other extension fails (file: $(file --mime-type -b "$r/w.j
 r="$(new_repo)"; echo 'x' >"$r/docs/a.md"; add "$r"
 expect 1 "missing 'file' command fails closed" env PATH="$tmp/nofile" /bin/bash "$check" -C "$r"
 
+# --- N2: documents that embed a scan image (Office/EPUB are zip containers)
+docx() { # docx <out>: a minimal Word document with a PNG inside
+  python3 -I - "$1" <<'PY'
+import sys, zipfile, base64
+png = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC")
+with zipfile.ZipFile(sys.argv[1], "w") as z:
+    z.writestr("[Content_Types].xml", '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>')
+    z.writestr("_rels/.rels", '<?xml version="1.0"?><Relationships/>')
+    z.writestr("word/document.xml", '<?xml version="1.0"?><w:document/>')
+    z.writestr("word/media/image1.png", png)
+PY
+}
+r="$(new_repo)"; docx "$r/docs/page14.docx"; add "$r"
+expect 1 "N2 .docx with an image fails" "$check" -C "$r"
+r="$(new_repo)"; docx "$r/docs/page14.dat"; add "$r"
+expect 1 "N2 .docx renamed to .dat fails (file: $(file --mime-type -b "$r/docs/page14.dat"))" "$check" -C "$r"
+for ext in docx pptx xlsx odt odp ods epub xps oxps ps eps cbz cbr djvu zst iso; do
+  r="$(new_repo)"; echo x >"$r/docs/file.$ext"; add "$r"
+  expect 1 "N2 *.$ext fails" "$check" -C "$r"
+done
+
 # --- F4: newline in name, exact match only
 r="$(new_repo)"; echo x >"$r/docs/diagram.png"; echo docs/diagram.png >"$r/scripts/scan-allowlist.txt"
 echo x >"$r/docs/diagram.png"$'\n'".png"; add "$r"
@@ -106,6 +127,29 @@ git -C "$r" merge -q --no-commit side >/dev/null 2>&1; echo x >"$r/docs/evil.jpg
 git -C "$r" commit -qm merge --no-verify >/dev/null
 expect 1 "F2 scan hidden in a merge commit fails" "$check" -C "$r" --range "$base..HEAD"
 
+# --- review MUST 1: type change (symlink -> PDF) then delete
+r="$(new_repo)"; commit "$r" base; base="$(git -C "$r" rev-parse HEAD)"
+ln -s notes.md "$r/docs/page"; commit "$r" symlink
+rm "$r/docs/page"; pdf "$r/docs/page"; commit "$r" typechange
+git -C "$r" rm -q docs/page; commit "$r" delete
+expect 1 "MUST1 symlink->PDF type change in history fails" "$check" -C "$r" --range "$base..HEAD"
+
+# --- review SHOULD 1: allowlist comes from the index / the committed policy
+r="$(new_repo)"; pdf "$r/docs/unapproved.pdf"; add "$r"
+echo docs/unapproved.pdf >"$r/scripts/scan-allowlist.txt"   # unstaged only
+expect 1 "SHOULD1 unstaged allowlist entry is ignored (index check)" "$check" -C "$r"
+r="$(new_repo)"; pdf "$r/docs/ok.pdf"; echo docs/ok.pdf >"$r/scripts/scan-allowlist.txt"; add "$r"
+: >"$r/scripts/scan-allowlist.txt"                           # unstaged removal
+expect 0 "SHOULD1 staged allowlist entry counts (index check)" "$check" -C "$r"
+r="$(new_repo)"; commit "$r" base; base="$(git -C "$r" rev-parse HEAD)"
+pdf "$r/docs/unapproved.pdf"; git -C "$r" add docs/unapproved.pdf; git -C "$r" commit -qm pdf --no-verify
+echo docs/unapproved.pdf >"$r/scripts/scan-allowlist.txt"
+expect 1 "SHOULD1 range ignores working-tree allowlist" "$check" -C "$r" --range "$base..HEAD"
+git -C "$r" add scripts/scan-allowlist.txt; git -C "$r" commit -qm allow --no-verify
+expect 0 "SHOULD1 range uses allowlist committed at policy tip" "$check" -C "$r" --policy HEAD --range "$base..HEAD"
+expect 1 "SHOULD1 range with older policy rejects" "$check" -C "$r" --policy HEAD~1 --range "$base..HEAD"
+expect 1 "SHOULD1 bad --policy fails closed" "$check" -C "$r" --policy no-such --range "$base..HEAD"
+
 # --- F2: hooks
 hooks="$here/hooks"
 r="$(new_repo)"; mkdir -p "$r/scripts/hooks"; cp "$check" "$r/scripts/"; cp "$hooks"/* "$r/scripts/hooks/"
@@ -123,5 +167,23 @@ echo x >"$r/docs/p.jpg"; git -C "$r" add docs/p.jpg; git -C "$r" commit -qm scan
 git -C "$r" rm -q docs/p.jpg; git -C "$r" commit -qm unscan >/dev/null 2>&1
 expect 1 "F2 pre-push blocks scan in pushed history" git -C "$r" push -q origin HEAD:refs/heads/main
 expect 1 "F2 pre-push blocks scan on a new branch" git -C "$r" push -q origin HEAD:refs/heads/topic
+
+# --- review MUST 2: new branch on one remote is not excused by another remote
+r="$(new_repo)"; mkdir -p "$r/scripts/hooks"; cp "$check" "$r/scripts/"; cp "$hooks"/* "$r/scripts/hooks/"
+git -C "$r" config core.hooksPath scripts/hooks; commit "$r" base
+pdf "$r/docs/page.pdf"; git -C "$r" add docs/page.pdf; git -C "$r" commit -qm scan --no-verify
+private="$tmp/private.git" public="$tmp/public.git"; git init -q --bare "$private"; git init -q --bare "$public"
+git -C "$r" remote add private "$private"; git -C "$r" remote add origin "$public"
+git -C "$r" push -q --no-verify private HEAD:refs/heads/main >/dev/null 2>&1
+expect 1 "MUST2 new branch on empty origin checks history known only to 'private'" git -C "$r" push -q origin HEAD:refs/heads/main
+[[ -z "$(git --git-dir="$public" for-each-ref)" ]] && echo "PASS MUST2 nothing reached origin" || { echo "FAIL MUST2 refs reached origin"; fails=1; }
+expect 1 "MUST2 push to a bare URL checks full history" git -C "$r" push -q "$public" HEAD:refs/heads/main
+# A clean new branch on a remote that already has the base is checked from there.
+r2="$(new_repo)"; mkdir -p "$r2/scripts/hooks"; cp "$check" "$r2/scripts/"; cp "$hooks"/* "$r2/scripts/hooks/"
+git -C "$r2" config core.hooksPath scripts/hooks; commit "$r2" base
+pub2="$tmp/pub2.git"; git init -q --bare "$pub2"; git -C "$r2" remote add origin "$pub2"
+expect 0 "MUST2 clean first push passes" git -C "$r2" push -q origin HEAD:refs/heads/main
+echo ok >"$r2/docs/more.md"; commit "$r2" more
+expect 0 "MUST2 clean new branch passes" git -C "$r2" push -q origin HEAD:refs/heads/topic
 
 exit "$fails"
