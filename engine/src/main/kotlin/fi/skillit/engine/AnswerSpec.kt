@@ -124,7 +124,7 @@ sealed interface AnswerSpec {
     /** A grid such as a times table with some blanks; blanks are checked in row-major order. */
     @Serializable @SerialName("fill-table")
     data class FillTable(val rows: List<List<TableEntry>>) : AnswerSpec {
-        private val blanks get() = rows.flatten().filterIsInstance<TableEntry.Blank>()
+        val blanks: List<TableEntry.Blank> get() = rows.flatten().filterIsInstance<TableEntry.Blank>()
         override fun validate() {
             require(rows.isNotEmpty() && rows.all { it.size == rows[0].size && it.isNotEmpty() }) { "Table must be rectangular" }
             require(blanks.isNotEmpty() && blanks.map { it.id }.distinct().size == blanks.size) { "Table needs blanks with unique ids" }
@@ -173,7 +173,8 @@ data class DigitCell(
 @Serializable
 sealed interface TableEntry {
     @Serializable @SerialName("given") data class Given(val text: String) : TableEntry
-    @Serializable @SerialName("blank") data class Blank(val id: String, val expected: Int) : TableEntry
+    /** [expression] lets the pack validator recompute [expected] when the exercise has no generator. */
+    @Serializable @SerialName("blank") data class Blank(val id: String, val expected: Int, val expression: String? = null) : TableEntry
 }
 
 /** What the child gave. Non-choice answers are a map from cell id to the written integer (null = left empty). */

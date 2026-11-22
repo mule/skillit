@@ -23,7 +23,7 @@ data class ContentPack(
     val units: List<PackUnit>,
 ) {
     /** Every problem found, empty when the pack is playable. Answers are re-derived by each [AnswerSpec]. */
-    fun problems(): List<String> = buildList {
+    fun problems(generators: Map<String, AnswerRecomputer> = emptyMap()): List<String> = buildList {
         if (schema != SCHEMA) add("schema must be $SCHEMA")
         if (!ID.matches(id)) add("pack id '$id' is invalid")
         if (subject.isBlank() || title.isBlank()) add("subject and title are required")
@@ -35,7 +35,7 @@ data class ContentPack(
         units.forEach { unit ->
             if (!ID.matches(unit.id)) add("unit id '${unit.id}' is invalid")
             if (unit.exercises.isEmpty() || unit.exercises.size > 100) add("unit ${unit.id} needs 1..100 exercises")
-            unit.exercises.forEach { exercise -> exercise.problems().forEach { add("${unit.id}/${exercise.id}: $it") } }
+            unit.exercises.forEach { exercise -> exercise.problems(generators).forEach { add("${unit.id}/${exercise.id}: $it") } }
         }
     }
 
@@ -58,11 +58,11 @@ data class ContentPack(
         }
 
         /** Parses and validates; throws [IllegalArgumentException] listing every problem. */
-        fun parse(text: String): ContentPack {
+        fun parse(text: String, generators: Map<String, AnswerRecomputer> = emptyMap()): ContentPack {
             val pack = try { json.decodeFromString(serializer(), text) } catch (e: kotlinx.serialization.SerializationException) {
                 throw IllegalArgumentException("Pack JSON does not match schema v1: ${e.message}", e)
             }
-            val problems = pack.problems()
+            val problems = pack.problems(generators)
             require(problems.isEmpty()) { problems.joinToString("\n") }
             return pack
         }
@@ -84,8 +84,8 @@ data class PackUnit(
 )
 
 /**
- * One exercise. It must carry an [expression] or a [generator] (or both) so that `mathgen` (#21) can recompute
- * the answer; the expected values inside [answer] are never trusted on their own.
+ * One exercise. It must carry an [expression] or a [generator] (or, for a table, an expression on every blank).
+ * [problems] recomputes the answer from them and rejects the exercise when the stored answer disagrees.
  */
 @Serializable
 data class PackExercise(
@@ -97,12 +97,14 @@ data class PackExercise(
     val expression: String? = null,
     val generator: GeneratorRef? = null,
 ) {
-    fun problems(): List<String> = buildList {
+    fun problems(generators: Map<String, AnswerRecomputer> = emptyMap()): List<String> = buildList {
         if (!ContentPack.ID.matches(id)) add("exercise id is invalid")
         if (prompt.isBlank() || hint.isBlank() || explanation.isBlank()) add("prompt, hint and explanation are required")
-        if (expression.isNullOrBlank() && generator == null) add("needs an expression or a generator")
+        val blanksCarryExpressions = answer is AnswerSpec.FillTable && answer.blanks.all { it.expression != null }
+        if (expression.isNullOrBlank() && generator == null && !blanksCarryExpressions) add("needs an expression or a generator")
         generator?.let { if (!ContentPack.ID.matches(it.family)) add("generator family is invalid") }
-        try { answer.validate() } catch (e: IllegalArgumentException) { add("answer: ${e.message}") }
+        try { answer.validate() } catch (e: IllegalArgumentException) { add("answer: ${e.message}"); return@buildList }
+        addAll(AnswerCheck.problems(this@PackExercise, generators))
     }
 
     fun toQuestion(level: Int): Question = Question.of(id, level, prompt, answer, hint, explanation)
