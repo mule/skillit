@@ -114,6 +114,21 @@ Reset clears adventure and practice with confirmation while keeping
 current sound preferences. A force-stopped practice round can be resumed from its
 island on the map; the original adventure resumes by default on a cold launch.
 
+## Source material
+
+Exercises follow the topics of the child's school textbooks and workbooks, but
+the scanned pages themselves are never part of this repo. They are copyrighted and
+include a child's handwriting.
+
+- Scans live only in the git-ignored local folder `docs/resources/` (also ignored:
+  `*.scan.pdf`). They never go into git or onto the server.
+- Packs hold only topics, parameters and newly written exercises: original content
+  derived from the topics, not copied pages.
+- CI runs `scripts/check-no-scans.sh`, which fails on any PDF, JPG, JPEG, PNG or
+  HEIC under `docs/`. Run it locally the same way; its test is
+  `scripts/test-check-no-scans.sh`. A genuine non-scan image can be allowed by
+  adding its path to `scripts/scan-allowlist.txt`.
+
 ## Local verification
 
 Use the build and instrumentation commands above. The M2 implementation report
