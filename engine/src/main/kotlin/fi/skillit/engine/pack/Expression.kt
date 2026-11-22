@@ -35,11 +35,16 @@ sealed interface Expression {
         const val MAX_DEPTH = 16
 
         /** Throws [IllegalArgumentException] for anything that is not a valid exact integer expression. */
-        fun parse(text: String): Expression = Parser(normalize(text).also { require(it.length <= MAX_LENGTH) { "Expression is too long" } }).run { expression().also { require(atEnd()) { "Unexpected '${rest()}'" } } }
+        fun parse(text: String): Expression = Parser(normalize(text)).run { expression().also { require(atEnd()) { "Unexpected '${rest()}'" } } }
+
+        /** Exactly the schema's alphabet: ASCII digits and space only, so no Unicode digit or space can hide in a number. */
+        const val ALPHABET = "0123456789+-*/():×· "
 
         private fun normalize(text: String): String {
-            require(!Regex("[0-9]\\s+[0-9]").containsMatchIn(text)) { "Space inside a number" }
-            return text.replace('×', '*').replace('·', '*').replace(':', '/').filterNot { it.isWhitespace() }
+            require(text.length <= MAX_LENGTH) { "Expression is too long" }
+            require(text.all { it in ALPHABET }) { "Only digits, + - * / ( ) × · : and spaces are allowed" }
+            require(!Regex("[0-9] +[0-9]").containsMatchIn(text)) { "Space inside a number" }
+            return text.replace('×', '*').replace('·', '*').replace(':', '/').replace(" ", "")
         }
 
         private fun apply(op: Char, a: Int, b: Int): Int {
@@ -47,7 +52,7 @@ sealed interface Expression {
                 '+' -> a.toLong() + b
                 '-' -> a.toLong() - b
                 '*' -> a.toLong() * b
-                '/' -> { require(b != 0 && a % b == 0) { "$a / $b is not exact" }; (a / b).toLong() }
+                '/' -> { require(b != 0 && a % b == 0) { "$a / $b is not exact" }; a.toLong() / b }
                 else -> throw IllegalArgumentException("Unknown operator $op")
             }
             require(result in Int.MIN_VALUE..Int.MAX_VALUE) { "Value out of range" }
@@ -76,7 +81,7 @@ sealed interface Expression {
                 require(!atEnd() && s[i] == ')') { "Missing ')'" }; i++; return inner
             }
             val start = i
-            while (!atEnd() && s[i].isDigit()) i++
+            while (!atEnd() && s[i] in '0'..'9') i++
             require(i > start && i - start <= 9) { "Expected a number at '${rest()}'" }
             return Number(s.substring(start, i).toInt())
         }

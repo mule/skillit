@@ -118,6 +118,10 @@ class AnswerSpecTest {
             AnswerSpec.MissingFactor(listOf(6, null, null), 42),
             AnswerSpec.MissingFactor(listOf(6, 7), 42),
             AnswerSpec.MissingFactor(listOf(0, null), 0),
+            // 100000⁴ wraps around in Long; it must be rejected step by step, not after the fold.
+            AnswerSpec.MissingFactor(listOf(100_000, 100_000, 100_000, 100_000)),
+            AnswerSpec.MissingFactor(listOf(100_000, 100_000, 100_000, null), 0),
+            AnswerSpec.MissingFactor(listOf(100_000, 100_000, null), 0),
         ).forEach { assertThrows(IllegalArgumentException::class.java) { it.validate() } }
     }
 }

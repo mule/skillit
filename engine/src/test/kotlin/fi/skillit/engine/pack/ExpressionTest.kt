@@ -25,6 +25,14 @@ class ExpressionTest {
         listOf("7 / 2", "1 / 0", "", "3 +", "(1 + 2", "1 + 2)", "x", "1 2", "9999999999", "99999 * 99999").forEach {
             assertThrows("'$it'", IllegalArgumentException::class.java) { Expression.parse(it) }
         }
+        // Only the schema alphabet: no Unicode spaces or digits that could hide a different number.
+        listOf("7\u00A08", "7\u20038", "7\u30008", "7\t8", "\u0663+\u0664", "\uFF17\uFF18", "7\u00A0+ 8", "7 + 8\n", "7^2", "7 % 2").forEach {
+            assertThrows("'$it'", IllegalArgumentException::class.java) { Expression.parse(it) }
+        }
+        assertEquals(15, Expression.parse(" 7 + 8 ").value)
+        // Int.MIN_VALUE / -1 overflows Int; it must be rejected, not wrap.
+        assertEquals(Int.MIN_VALUE, Expression.parse("(0-999999999-999999999-147483650)").value)
+        assertThrows(IllegalArgumentException::class.java) { Expression.parse("(0-999999999-999999999-147483650)/(0-1)") }
         assertEquals(1, Expression.parse("(".repeat(16) + "1" + ")".repeat(16)).value)
         assertThrows(IllegalArgumentException::class.java) { Expression.parse("(".repeat(17) + "1" + ")".repeat(17)) }
         assertThrows(IllegalArgumentException::class.java) { Expression.parse("(".repeat(100_000)) }

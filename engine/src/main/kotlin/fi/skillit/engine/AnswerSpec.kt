@@ -11,6 +11,26 @@ import kotlinx.serialization.Serializable
  * Non-choice answers are checked per cell. Cells are listed in solving order, so the first wrong cell in
  * [CheckResult.cells] is the one the child should look at first.
  */
+/** Size limits shared by the model and `content-schema/pack.v1.json`; keep both in sync. */
+object PackLimits {
+    const val TITLE = 200
+    const val PROMPT = 500
+    const val HINT = 1000
+    const val EXPLANATION = 1000
+    const val SUBJECT = 32
+    const val UNITS = 50
+    const val EXERCISES = 100
+    const val PAGES = 20
+    const val PARAMS = 20
+    const val PARAMS_JSON = 1000
+    const val CHOICES = 10
+    const val LABEL = 200
+    const val TABLE_SIDE = 20
+    const val CELL_TEXT = 50
+    const val CELL_ID = 32
+    const val DIGIT_CELLS = 200
+}
+
 @Serializable
 sealed interface AnswerSpec {
     /** Throws [IllegalArgumentException] when the spec is inconsistent. */
@@ -23,7 +43,8 @@ sealed interface AnswerSpec {
     @Serializable @SerialName("choice")
     data class Choice(val choices: List<fi.skillit.engine.Choice>, val correctId: String) : AnswerSpec {
         override fun validate() {
-            require(choices.size >= 2 && choices.map { it.id }.distinct().size == choices.size) { "Choices must be at least two with unique ids" }
+            require(choices.size in 2..PackLimits.CHOICES && choices.map { it.id }.distinct().size == choices.size) { "Choices must be 2..${PackLimits.CHOICES} with unique ids" }
+            require(choices.all { it.id.length in 1..PackLimits.CELL_ID && it.label.length in 1..PackLimits.LABEL }) { "Choice id or label too long" }
             require(choices.count { it.id == correctId } == 1) { "Exactly one choice must be correct" }
         }
         override fun check(input: AnswerInput): CheckResult? {
@@ -49,7 +70,7 @@ sealed interface AnswerSpec {
         override fun validate() {
             require(factors.size == 2 && factors.all { it in 1..99_999 }) { "Column multiplication needs two factors 1..99999" }
             require(factors[0].toLong() * factors[1] <= Int.MAX_VALUE) { "Product is too large" }
-            require(cells.isNotEmpty() && cells.map { it.id }.distinct().size == cells.size) { "Cell ids must be unique" }
+            require(cells.size in 1..PackLimits.DIGIT_CELLS && cells.map { it.id }.distinct().size == cells.size) { "Cell ids must be unique" }
             val reference = layout(factors[0], factors[1]).cells.associateBy { it.id }
             cells.forEach { cell ->
                 val ref = requireNotNull(reference[cell.id]) { "Unknown cell ${cell.id}" }
@@ -116,6 +137,7 @@ sealed interface AnswerSpec {
         override fun validate() {
             require(values.isNotEmpty() && values.size <= 10) { "Steps need 1..10 values" }
             require(labels.isEmpty() || labels.size == values.size) { "Give a label for every step or none" }
+            require(labels.all { it.length <= PackLimits.LABEL }) { "Step label too long" }
         }
         override fun check(input: AnswerInput) =
             checkCells(values.mapIndexed { i, value -> ExpectedCell("s$i", value) }, input)
@@ -127,6 +149,11 @@ sealed interface AnswerSpec {
         val blanks: List<TableEntry.Blank> get() = rows.flatten().filterIsInstance<TableEntry.Blank>()
         override fun validate() {
             require(rows.isNotEmpty() && rows.all { it.size == rows[0].size && it.isNotEmpty() }) { "Table must be rectangular" }
+            require(rows.size <= PackLimits.TABLE_SIDE && rows[0].size <= PackLimits.TABLE_SIDE) { "Table is larger than ${PackLimits.TABLE_SIDE}×${PackLimits.TABLE_SIDE}" }
+            require(rows.flatten().all { when (it) {
+                is TableEntry.Given -> it.text.length <= PackLimits.CELL_TEXT
+                is TableEntry.Blank -> it.id.length in 1..PackLimits.CELL_ID
+            } }) { "Table text or blank id too long" }
             require(blanks.isNotEmpty() && blanks.map { it.id }.distinct().size == blanks.size) { "Table needs blanks with unique ids" }
         }
         override fun check(input: AnswerInput) = checkCells(blanks.map { ExpectedCell(it.id, it.expected) }, input)
@@ -137,17 +164,20 @@ sealed interface AnswerSpec {
     data class MissingFactor(val factors: List<Int?>, val product: Int? = null) : AnswerSpec {
         /** The computed value of the blank. */
         val expected: Int get() {
-            val known = factors.filterNotNull().fold(1L) { acc, f -> acc * f }
+            val known = knownProduct()
             return if (product == null) known.toInt() else (product / known).toInt()
         }
         override fun validate() {
             require(factors.size in 2..4 && (factors + product).count { it == null } == 1) { "Exactly one unknown" }
             require(factors.all { it == null || it in 0..100_000 } && (product == null || product >= 0)) { "Out of range" }
-            val known = factors.filterNotNull().fold(1L) { acc, f -> acc * f }
-            require(known <= Int.MAX_VALUE) { "Product is too large" }
+            val known = knownProduct()
             if (product != null) require(known != 0L && product % known == 0L) { "Product is not divisible by the known factors" }
         }
         override fun check(input: AnswerInput) = checkCells(listOf(ExpectedCell(CELL, expected)), input)
+        /** Bounded after every step, so four large factors cannot wrap around in Long. */
+        private fun knownProduct(): Long = factors.filterNotNull().fold(1L) { acc, f ->
+            (acc * f).also { require(it <= Int.MAX_VALUE) { "Product is too large" } }
+        }
         companion object { const val CELL = "missing" }
     }
 }
