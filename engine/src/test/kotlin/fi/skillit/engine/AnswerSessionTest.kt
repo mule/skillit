@@ -64,6 +64,7 @@ class AnswerSessionTest {
             answer.copy(choiceId = "{"),
             answer.copy(choiceId = """{"type":"choice","id":"a"}"""),
             answer.copy(choiceId = """{"type":"cells","values":{"x":1}}"""),
+            answer.copy(choiceId = "[".repeat(10_000)), // rejected by the depth preflight, not a StackOverflowError
         ).forEach { bad ->
             assertThrows(IllegalArgumentException::class.java) {
                 ExerciseSession.restore(questions, session.events.dropLast(1) + bad)

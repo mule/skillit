@@ -163,6 +163,22 @@ class ContentPackTest {
         assertNull(fi.skillit.engine.Choice("o0", "C").value)
     }
 
+    @Test fun deeplyNestedJsonIsRejectedBeforeDecoding() {
+        listOf(3000, 10_000).forEach { depth ->
+            val nested = "[".repeat(depth) + "0" + "]".repeat(depth)
+            val text = sampleText.replaceFirst("\"answer\": { \"type\": \"numeric\", \"expected\": 56 },",
+                "\"answer\": { \"type\": \"numeric\", \"expected\": 56 }, \"generator\": { \"family\": \"g\", \"seed\": 1, \"params\": { \"p\": $nested } },")
+            assertNotEquals(sampleText, text)
+            val error = assertThrows(IllegalArgumentException::class.java) { ContentPack.parse(text) }
+            assertTrue(error.message!!.contains("nested deeper"))
+        }
+        // Brackets inside strings (escaped quotes included) do not count.
+        val prompt = "\\\"" + "[".repeat(100)
+        fi.skillit.engine.JsonDepth.require("{\"a\": \"$prompt\"}")
+        assertThrows(IllegalArgumentException::class.java) { fi.skillit.engine.JsonDepth.require("[".repeat(33)) }
+        fi.skillit.engine.JsonDepth.require("[".repeat(32) + "]".repeat(32))
+    }
+
     @Test fun oversizedContentIsRejected() {
         val ex = sample.units[0].exercises[0]
         val cases = mapOf(

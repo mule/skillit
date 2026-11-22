@@ -120,7 +120,7 @@ class ExerciseSession(val questions: List<Question>) {
 
     private fun replayAnswer(event: SessionEvent): Boolean {
         if (current?.question?.spec is AnswerSpec.Choice) return answer(event.token, event.choiceId)
-        val input = try { inputJson.decodeFromString<AnswerInput>(event.choiceId) } catch (_: Exception) { return false }
+        val input = try { JsonDepth.require(event.choiceId); inputJson.decodeFromString<AnswerInput>(event.choiceId) } catch (_: Exception) { return false }
         // Only the canonical encoding is accepted, so a replayed history is byte-for-byte what was saved.
         return input is AnswerInput.Cells && encode(input) == event.choiceId && submit(event.token, input)
     }

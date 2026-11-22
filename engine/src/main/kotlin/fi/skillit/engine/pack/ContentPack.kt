@@ -1,6 +1,7 @@
 package fi.skillit.engine.pack
 
 import fi.skillit.engine.AnswerSpec
+import fi.skillit.engine.JsonDepth
 import fi.skillit.engine.PackLimits
 import fi.skillit.engine.Question
 import kotlinx.serialization.Serializable
@@ -65,6 +66,7 @@ data class ContentPack(
 
         /** Parses and validates; throws [IllegalArgumentException] listing every problem. */
         fun parse(text: String, generators: Map<String, AnswerRecomputer> = emptyMap()): ContentPack {
+            JsonDepth.require(text) // before decoding: deep nesting would overflow the stack
             val pack = try { json.decodeFromString(serializer(), text) } catch (e: kotlinx.serialization.SerializationException) {
                 throw IllegalArgumentException("Pack JSON does not match schema v1: ${e.message}", e)
             }
