@@ -37,7 +37,10 @@ sealed interface Expression {
         /** Throws [IllegalArgumentException] for anything that is not a valid exact integer expression. */
         fun parse(text: String): Expression = Parser(normalize(text).also { require(it.length <= MAX_LENGTH) { "Expression is too long" } }).run { expression().also { require(atEnd()) { "Unexpected '${rest()}'" } } }
 
-        private fun normalize(text: String) = text.replace('×', '*').replace('·', '*').replace(':', '/').filterNot { it.isWhitespace() }
+        private fun normalize(text: String): String {
+            require(!Regex("[0-9]\\s+[0-9]").containsMatchIn(text)) { "Space inside a number" }
+            return text.replace('×', '*').replace('·', '*').replace(':', '/').filterNot { it.isWhitespace() }
+        }
 
         private fun apply(op: Char, a: Int, b: Int): Int {
             val result: Long = when (op) {

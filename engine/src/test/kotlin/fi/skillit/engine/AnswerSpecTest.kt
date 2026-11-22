@@ -47,21 +47,22 @@ class AnswerSpecTest {
     }
 
     @Test fun twoDigitMultiplierLayoutHasPartialRowsSumCarriesAndTheProduct() {
-        val spec = ColumnMultiplication.layout(47, 36) // 282 + 1410 = 1692
+        val spec = ColumnMultiplication.layout(76, 58) // 608 + 3800 = 4408
         spec.validate()
         val byId = spec.cells.associateBy { it.id }
-        assertEquals(listOf(2, 8, 2), listOf("p0.0", "p0.1", "p0.2").map { byId.getValue(it).expected })
-        assertEquals(4, byId.getValue("c0.1").expected) // 6 · 7 = 42
-        assertEquals(listOf(1, 4, 1), listOf("p1.1", "p1.2", "p1.3").map { byId.getValue(it).expected })
-        assertEquals(2, byId.getValue("c1.2").expected) // 3 · 7 = 21
-        assertEquals(listOf(2, 9, 6, 1), listOf("r0", "r1", "r2", "r3").map { byId.getValue(it).expected })
-        assertEquals(1, byId.getValue("s2").expected) // 8 + 4 = 12
+        val digits = { ids: String -> ids.split(" ").map { byId.getValue(it).expected } }
+        assertEquals(listOf(8, 0, 6), digits("p0.0 p0.1 p0.2"))
+        assertEquals(4, byId.getValue("c0.1").expected) // 8 · 6 = 48
+        assertEquals(listOf(0, 8, 3), digits("p1.1 p1.2 p1.3"))
+        assertEquals(3, byId.getValue("c1.2").expected) // 5 · 6 = 30
+        assertEquals(listOf(8, 0, 4, 4), digits("r0 r1 r2 r3"))
+        assertEquals(1, byId.getValue("s3").expected) // 6 + 8 = 14
+        assertEquals(listOf("p0.0", "c0.1", "p0.1", "p0.2", "p1.1", "c1.2", "p1.2", "p1.3", "r0", "r1", "r2", "s3", "r3"), spec.cells.map { it.id })
         val answer = spec.cells.filter { it.required }.associate { it.id to it.expected }
         assertTrue(spec.check(AnswerInput.Cells(answer))!!.correct)
         val slip = spec.check(AnswerInput.Cells(answer + ("p1.2" to 5)))!!
         assertFalse(slip.correct)
         assertEquals("p1.2", slip.firstWrong!!.id)
-        assertEquals(spec.cells.map { it.id }.indexOf("p0.0"), 0)
     }
 
     @Test fun columnMultiplicationRejectsTamperedDigitsAndMissingResultCells() {
