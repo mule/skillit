@@ -7,7 +7,12 @@ No strokes, scans, child identity or device identifiers are included.
 Use `AttemptEvent.record(...)` with the exact pack id/version, item id, answer
 spec and input accepted by `ExerciseSession`. Copy `generator.family` and
 `generator.params` unchanged; for expression-only items use a stable caller
-family and an empty params object. Retain each immutable pack version for
+family and an empty params object. **Pack builder contract:** params must never
+contain child identity, names, contact/device identifiers, child-entered text,
+handwriting or other personal data. Only author-controlled exercise-generation
+parameters belong here; do not add user input to params when recording attempts.
+The builder and caller must enforce this rule before bundling a pack or logging
+an event; the JSON schema cannot infer the meaning of opaque values. Retain each immutable pack version for
 future explanations: the pack supplies the original prompt and expected answer.
 The log records the complete submitted per-cell map, including explicit nulls
 and optional carry cells. Choice answers retain the choice id.
@@ -17,7 +22,7 @@ submission. Pen confidence is nullable, in [0,1]; pad confidence must be null.
 `timestamp` is UTC Unix milliseconds. A correct attempt has null `errorClass`.
 Error labels describe hypotheses, not proven causes; they never change XP.
 The classifier uses low pen confidence (<0.65) first, then a power-of-ten shift,
-then evidence of a lost carry, then table-fact errors; ambiguous errors are
+or unshifted partial-product sum, then evidence of a lost carry, then table-fact errors; ambiguous errors are
 `other`. Missing optional carries alone are not mistakes. No AI or mathgen
 module runs on this path.
 
@@ -28,9 +33,14 @@ do not tell the caller a write succeeded before `append` returns. Identical
 UUID replays are no-ops, conflicting replays are rejected. A process monitor
 and OS file lock serialize store instances and processes. Each append is
 fsynced. A newline is the commit boundary: after a crash the store truncates
-only the unterminated, uncommitted suffix. Malformed committed lines stop
-reads/writes with IOException and are preserved for recovery. There is no
-reset, overwrite, network, or compaction API. Reads currently scan the log;
+only the unterminated, uncommitted suffix. A malformed committed record,
+duplicate UUID or oversized record quarantines the entire file intact as
+`attempts.v1.corrupt-<timestamp>.jsonl` under the same lock. A fresh active
+journal then accepts reads and appends; repeated quarantines never overwrite
+one another. Quarantined history is preserved for manual recovery and is not
+returned by `read()` or used for current UUID deduplication/adaptive selection.
+An IO/rename failure is still surfaced, without deleting the old file. There is
+no reset, network, or compaction API. Reads currently scan the log;
 indexing/retention is future work before very large histories are deployed.
 
 No migration of music/nature progress is needed: this is a separate file and
@@ -50,4 +60,7 @@ successes restart the clock without extending the interval. Remaining weights
 use the latest 40 relevant family/item records, with extra weight for matching
 opaque params. Other pack versions, other packs and future-dated attempts do
 not contribute. Reasons use answer specs and error classes, never guessed
-parameter meanings. The UI caller (#27) displays `Selection.explanation`.
+parameter meanings. Named tables require a WRONG_TABLE_FACT miss on the same
+fact (matching generator family and params, or the same item id for exercises
+without a generator); they exclude 10. Carry/place-value/pen errors do not
+claim table weaknesses. The UI caller (#27) displays `Selection.explanation`.

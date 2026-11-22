@@ -9,7 +9,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
-import java.io.IOException
 import java.util.concurrent.Executors
 
 class AttemptLogTest {
@@ -50,14 +49,34 @@ class AttemptLogTest {
         assertTrue(log.append(event()))
         assertEquals(2, log.read().size)
     }
-    @Test fun committedCorruptionFailsWithoutReplacingHistory() {
+    @Test fun committedCorruptionIsQuarantinedIntactAndAppendCanContinue() {
+        val dir = temporary.newFolder()
+        val log = AttemptLog(dir)
+        log.append(event())
+        val file = File(dir, "attempts.v1.jsonl")
+        file.appendBytes(byteArrayOf(0, 0, 10))
+        val corrupt = file.readBytes()
+        val next = event()
+        assertTrue(log.append(next))
+        val archived = dir.listFiles()!!.single { it.name.startsWith("attempts.v1.corrupt-") }
+        assertArrayEquals(corrupt, archived.readBytes())
+        assertEquals(listOf(next), log.read())
+        assertFalse(AttemptLog(dir).append(next))
+    }
+    @Test fun readingCorruptionStartsAFreshJournalAndKeepsEveryQuarantine() {
         val dir = temporary.newFolder()
         val file = File(dir, "attempts.v1.jsonl")
-        file.writeText("broken\n")
-        assertThrows(IOException::class.java) { AttemptLog(dir).append(event()) }
-        assertEquals("broken\n", file.readText())
+        repeat(2) { i ->
+            file.writeText("broken-$i\n")
+            assertTrue(AttemptLog(dir).read().isEmpty())
+        }
+        val archives = dir.listFiles()!!.filter { it.name.startsWith("attempts.v1.corrupt-") }
+        assertEquals(setOf("broken-0\n", "broken-1\n"), archives.map { it.readText() }.toSet())
+        val next = event()
+        assertTrue(AttemptLog(dir).append(next))
+        assertEquals(listOf(next), AttemptLog(dir).read())
     }
-    @Test fun mathLogLeavesLegacyMusicAndNatureSaveFilesByteIdentical() {
+    @Test fun mathLogLeavesNeighboringSaveSentinelFilesByteIdentical() {
         val root = temporary.newFolder()
         val data = File(root, "files/datastore").apply { mkdirs() }
         val fixture = javaClass.getResourceAsStream("/saves/music-v1.json")!!.use { it.readBytes() }

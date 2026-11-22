@@ -11,17 +11,17 @@ import java.io.RandomAccessFile
 /**
  * Local, logically append-only JSONL journal. Call on an IO dispatcher, never the UI thread.
  * A newline commits a record. A crash may leave an uncommitted tail; the next open removes only
- * that tail. Committed malformed records fail closed and are never silently dropped/replaced.
+ * that tail. Committed malformed records are quarantined intact before a fresh journal is opened.
  */
 class AttemptLog internal constructor(private val directory: File) {
-    fun read(): List<AttemptEvent> = locked { journal -> readCommitted(journal) }
+    fun read(): List<AttemptEvent> = locked { _, events -> events }
 
     /** False for an identical replay; a reused UUID with different contents is rejected. */
     fun append(event: AttemptEvent): Boolean {
         val encoded = AttemptCodec.encode(event).toByteArray(Charsets.UTF_8)
         require(encoded.size <= MAX_LINE_BYTES)
-        return locked { journal ->
-            val existing = readCommitted(journal).find { it.eventId == event.eventId }
+        return locked { journal, events ->
+            val existing = events.find { it.eventId == event.eventId }
             if (existing != null) {
                 require(existing == event) { "Event UUID already belongs to a different attempt" }
                 false
@@ -35,12 +35,29 @@ class AttemptLog internal constructor(private val directory: File) {
         }
     }
 
-    private fun <T> locked(block: (RandomAccessFile) -> T): T = synchronized(monitor) {
+    private fun <T> locked(block: (RandomAccessFile, List<AttemptEvent>) -> T): T = synchronized(monitor) {
         if (!directory.isDirectory && !directory.mkdirs()) throw IOException("Cannot create attempt log directory")
         // The process monitor also prevents OverlappingFileLockException across separate store instances.
         RandomAccessFile(File(directory, "attempts.v1.lock"), "rw").use { lock ->
-            lock.channel.lock().use {
-                RandomAccessFile(File(directory, "attempts.v1.jsonl"), "rw").use(block)
+            lock.channel.lock().use lockedFile@ {
+                val file = File(directory, "attempts.v1.jsonl")
+                val journal = RandomAccessFile(file, "rw")
+                val events = try { readCommitted(journal) } catch (_: CorruptJournal) {
+                    journal.close()
+                    // Keep all bytes, including good records and any tail; never overwrite a quarantine.
+                    var timestamp = System.currentTimeMillis()
+                    var quarantine = File(directory, "attempts.v1.corrupt-$timestamp.jsonl")
+                    while (quarantine.exists()) {
+                        timestamp++
+                        quarantine = File(directory, "attempts.v1.corrupt-$timestamp.jsonl")
+                    }
+                    if (!file.renameTo(quarantine)) throw IOException("Cannot quarantine corrupt attempt journal")
+                    return@lockedFile RandomAccessFile(file, "rw").use { fresh -> block(fresh, emptyList()) }
+                } catch (e: Throwable) {
+                    journal.close()
+                    throw e
+                }
+                journal.use { block(it, events) }
             }
         }
     }
@@ -60,13 +77,13 @@ class AttemptLog internal constructor(private val directory: File) {
                 val byte = buffer[i].toInt() and 0xff
                 if (byte == '\n'.code) {
                     val event = try { AttemptCodec.decode(line.toString("UTF-8")) }
-                    catch (e: IllegalArgumentException) { throw IOException("Invalid committed attempt record", e) }
+                    catch (e: IllegalArgumentException) { throw CorruptJournal("Invalid committed attempt record", e) }
                     val previous = events.putIfAbsent(event.eventId, event)
-                    if (previous != null) throw IOException("Duplicate UUID in committed attempt log")
+                    if (previous != null) throw CorruptJournal("Duplicate UUID in committed attempt log")
                     line.reset()
                     committedEnd = position
                 } else {
-                    if (line.size() >= MAX_LINE_BYTES) throw IOException("Attempt record exceeds size limit")
+                    if (line.size() >= MAX_LINE_BYTES) throw CorruptJournal("Attempt record exceeds size limit")
                     line.write(byte)
                 }
             }
@@ -77,6 +94,8 @@ class AttemptLog internal constructor(private val directory: File) {
         }
         return events.values.toList()
     }
+
+    private class CorruptJournal(message: String, cause: Throwable? = null) : IOException(message, cause)
 
     companion object {
         private val monitor = Any()
