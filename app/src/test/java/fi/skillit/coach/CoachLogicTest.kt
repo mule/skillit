@@ -1,6 +1,11 @@
 package fi.skillit.coach
 
+import fi.skillit.ink.DigitReading
+import kotlinx.coroutines.async
 import fi.skillit.ink.DigitRowState
+import fi.skillit.ink.DigitScore
+import fi.skillit.ink.InkPoint
+import fi.skillit.ink.InkStroke
 import fi.skillit.ink.InputMode
 import org.junit.Assert.*
 import org.junit.Rule
@@ -142,6 +147,70 @@ class CoachLogicTest {
         val beforeAnswer = dispatched
         env.recordAnswer(listOf(WrittenDigit(0, 4, .9f, strokes = f.strokes, boxWidth = f.boxWidth, boxHeight = f.boxHeight)))
         assertTrue(dispatched > beforeAnswer)
+    }
+
+    private fun ink(vararg xy: Float) = listOf(InkStroke(xy.toList().chunked(2).mapIndexed { i, (x, y) -> InkPoint(x, y, i.toLong()) }))
+    private fun accepted(d: Int, c: Float) = DigitReading.Accepted(d, c, listOf(DigitScore(d, c)))
+
+    @Test fun penRowsReportOnlyNewInkWithOffsetsAndAsks() {
+        // Item "q1": a 2-cell row "a" and a 1-cell row "b" (sorted by cell id); item "q2" must be ignored.
+        val a = RowInk(true, listOf(3, 6), mapOf(0 to accepted(3, .45f), 1 to DigitReading.Ask(4, 6, listOf(DigitScore(6, .5f), DigitScore(4, .4f)))),
+            mapOf(0 to ink(1f, 1f, 5f, 5f), 1 to ink(2f, 2f, 6f, 6f)), 72f, 72f)
+        val b = RowInk(true, listOf(7), mapOf(0 to accepted(7, .9f)), mapOf(0 to ink(3f, 3f, 7f, 7f)), 48f, 48f)
+        val other = RowInk(true, listOf(1), mapOf(0 to accepted(1, .1f)), mapOf(0 to ink(0f, 0f, 1f, 9f)), 72f, 72f)
+        val reported = mutableMapOf<Pair<String, String>, Map<Int, List<InkStroke>>>()
+        val rows = mapOf(("q1" to "b") to b, ("q1" to "a") to a, ("q2" to "a") to other)
+        val first = writtenSince("q1", rows, reported)
+        assertEquals(listOf(0 to 3, 1 to 6, 2 to 7), first.map { it.cell to it.digit })
+        assertEquals(listOf(.45f, .5f, .9f), first.map { it.confidence })
+        assertEquals(listOf(false, true, false), first.map { it.asked })
+        assertEquals(listOf(72f, 72f, 48f), first.map { it.boxWidth })
+        assertEquals(9, ClarityCoach().afterAnswer(first)?.let { 9 })
+        // Retry: nothing rewritten → nothing to measure, store or prompt again.
+        assertTrue(writtenSince("q1", rows, reported).isEmpty())
+        // Retry where only the 6 was rewritten.
+        val fixed = a.copy(digits = listOf(3, 5), readings = mapOf(0 to accepted(3, .45f), 1 to accepted(5, .8f)), strokes = a.strokes + (1 to ink(9f, 9f, 2f, 2f)))
+        val retry = writtenSince("q1", rows + (("q1" to "a") to fixed), reported)
+        assertEquals(listOf(1 to 5), retry.map { it.cell to it.digit })
+        assertEquals("other item untouched", listOf(1), writtenSince("q2", rows, reported).map { it.digit })
+    }
+
+    @Test fun padRowsGiveDigitsWithoutInk() {
+        val pad = RowInk(false, listOf(null, 4))
+        assertEquals(listOf(WrittenDigit(1, 4, null)), writtenSince("q", mapOf(("q" to "a") to pad), mutableMapOf()))
+    }
+
+    @Test fun aSaveStartedBeforeAResetIsDroppedOrWiped() = kotlinx.coroutines.runBlocking {
+        val dir = File(tmp.root, "race")
+        val legibility = LegibilityStore(File(dir, "legibility.v1.tsv"), { now }, { ZoneId.of("UTC") })
+        val inWrite = java.util.concurrent.CountDownLatch(1)
+        val release = java.util.concurrent.CountDownLatch(1)
+        val ink = fi.skillit.ink.AttemptInkStore(File(dir, "attempts"), writer = { f, text -> inWrite.countDown(); release.await(); f.writeText(text) })
+        val env = CoachEnvironment(legibility, null, io = kotlinx.coroutines.Dispatchers.IO, compute = kotlinx.coroutines.Dispatchers.Unconfined, ink = ink)
+        val f = Fixtures["neat-3"]
+        val digit = listOf(WrittenDigit(0, 3, .9f, strokes = f.strokes, boxWidth = f.boxWidth, boxHeight = f.boxHeight))
+        fun wipe() = HandwritingData.reset { legibility.deleteAll(); ink.deleteAll() }
+        fun empty() = legibility.days().isEmpty() && ink.all().isEmpty()
+
+        // 1) The save is mid-write when the parent resets: the reset waits for it, then wipes it.
+        val save = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).async { env.recordAnswer(digit, "a1", HandwritingData.generation) }
+        assertTrue(inWrite.await(5, java.util.concurrent.TimeUnit.SECONDS))
+        val reset = Thread { wipe() }.apply { start() }
+        Thread.sleep(100)
+        assertTrue("reset waits for the save in progress", reset.isAlive)
+        release.countDown(); save.await(); reset.join(5_000)
+        assertTrue("nothing left after reset: ${legibility.days()} ${ink.all().map { it.key }}", empty())
+
+        // 2) Answer checked (generation taken), reset, then the save runs: dropped.
+        val generation = HandwritingData.generation
+        wipe()
+        env.recordAnswer(digit, "a2", generation)
+        assertTrue("stale save dropped", empty())
+
+        // A save after the reset is kept.
+        env.recordAnswer(digit, "a3", HandwritingData.generation)
+        assertEquals(listOf("a3"), ink.all().map { it.key })
+        assertEquals(1, legibility.days().single().count)
     }
 
     @Test fun answerDigitsWithInkAreMeasured() {

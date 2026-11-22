@@ -64,21 +64,54 @@ class ClarityCoach(
  * What the child wrote in [state] (pen mode), cell by cell, for [ClarityCoach.afterAnswer] and
  * [CoachEnvironment.recordAnswer]. Number-pad rows give digits with no confidence, so they never prompt.
  */
-fun DigitRowState.writtenDigits(): List<WrittenDigit> {
-    val strokes = if (mode == InputMode.Pen) strokesByCell() else emptyMap()
-    // `ink` is module-internal: the coach lives in the same module as the pen cells.
-    val row = ink.row
-    return digits.mapIndexedNotNull { cell, digit ->
+fun DigitRowState.writtenDigits(): List<WrittenDigit> = rowInk().writtenDigits()
+
+/** A plain snapshot of one [DigitRowState], so the mapping to [WrittenDigit] is testable without an ink view. */
+data class RowInk(
+    val pen: Boolean,
+    val digits: List<Int?>,
+    val readings: Map<Int, DigitReading> = emptyMap(),
+    /** Strokes per cell, relative to the cell's corner. */
+    val strokes: Map<Int, List<InkStroke>> = emptyMap(),
+    val boxWidth: Float = 0f,
+    val boxHeight: Float = 0f,
+) {
+    val cells: Int get() = digits.size
+
+    fun writtenDigits(): List<WrittenDigit> = digits.mapIndexedNotNull { cell, digit ->
         digit ?: return@mapIndexedNotNull null
-        if (mode != InputMode.Pen) return@mapIndexedNotNull WrittenDigit(cell, digit, null)
+        if (!pen) return@mapIndexedNotNull WrittenDigit(cell, digit, null)
         val reading = readings[cell]
         WrittenDigit(
             cell = cell, digit = digit,
             confidence = reading?.ranked?.firstOrNull { it.digit == digit }?.confidence ?: 0f,
             asked = reading is DigitReading.Ask,
             strokes = strokes[cell].orEmpty(),
-            boxWidth = row?.boxWidth ?: 0f, boxHeight = row?.boxHeight ?: 0f,
+            boxWidth = boxWidth, boxHeight = boxHeight,
         )
+    }
+}
+
+fun DigitRowState.rowInk(): RowInk {
+    val pen = mode == InputMode.Pen
+    // `ink` is module-internal: the coach lives in the same module as the pen cells.
+    val row = ink.row
+    return RowInk(pen, digits, if (pen) readings else emptyMap(), if (pen) strokesByCell() else emptyMap(), row?.boxWidth ?: 0f, row?.boxHeight ?: 0f)
+}
+
+/**
+ * Collects what was written for one board item across its rows, for the coach. Cells get one running index in
+ * row order. Only digits whose ink changed since the last call for the item are returned ([reported] remembers
+ * that), so a retry that rewrites one cell is not measured, stored or prompted again for the cells the child
+ * left alone (review S1).
+ */
+fun writtenSince(item: String, rows: Map<Pair<String, String>, RowInk>, reported: MutableMap<Pair<String, String>, Map<Int, List<InkStroke>>>): List<WrittenDigit> {
+    var offset = 0
+    return rows.filterKeys { it.first == item }.entries.sortedBy { it.key.second }.flatMap { (key, row) ->
+        val before = reported[key].orEmpty()
+        reported[key] = row.strokes
+        row.writtenDigits().filter { !row.pen || it.strokes.isNotEmpty() && it.strokes != before[it.cell] }
+            .map { it.copy(cell = offset + it.cell) }.also { offset += row.cells }
     }
 }
 

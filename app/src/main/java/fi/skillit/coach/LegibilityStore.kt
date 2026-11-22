@@ -203,8 +203,23 @@ object WarmUp {
 object HandwritingData {
     fun attemptInk(context: Context) = fi.skillit.ink.AttemptInkStore(File(context.applicationContext.noBackupFilesDir, "handwriting/attempts"))
 
+    /**
+     * One lock for every handwriting write and for reset, whatever store instance is used (security review I1).
+     * Each reset bumps [generation]; a save that was started before a reset (it captured the older generation)
+     * is dropped instead of writing the old child's data back after the wipe.
+     */
+    private val lock = Any()
+    @Volatile var generation: Long = 0L
+        private set
+
+    /** Runs [block] under the lock, unless a reset happened since [since]. Returns null when dropped. */
+    fun <T> ifCurrent(since: Long, block: () -> T): T? = synchronized(lock) { if (generation != since) null else block() }
+
+    /** Wipes under the lock and invalidates every save started before this call. */
+    fun reset(wipe: () -> Unit) = synchronized(lock) { generation++; wipe() }
+
     /** Deletes the legibility aggregates and every stored attempt's strokes. Blocking: call off the main thread. */
-    fun deleteAll(context: Context) {
+    fun deleteAll(context: Context) = reset {
         LegibilityStore.open(context.applicationContext).deleteAll()
         attemptInk(context).deleteAll()
     }

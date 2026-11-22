@@ -54,24 +54,28 @@ class CoachEnvironment(
     /** Raw strokes per answer attempt (#26), app-private, pruned to [AttemptInkStore.KEEP_ATTEMPTS]. Null = not kept. */
     val ink: AttemptInkStore? = null,
 ) {
-    /** Adds reports to the aggregates. False when the disk refused; the child's play is never interrupted. */
-    suspend fun record(reports: List<LegibilityReport>): Boolean = try {
-        withContext(io) { store?.record(reports) }; true
+    /**
+     * Adds reports to the aggregates. False when the disk refused; the child's play is never interrupted.
+     * Dropped (still true) when a reset happened after [generation] was taken, see [HandwritingData.ifCurrent].
+     */
+    suspend fun record(reports: List<LegibilityReport>, generation: Long = HandwritingData.generation): Boolean = try {
+        withContext(io) { HandwritingData.ifCurrent(generation) { store?.record(reports) } }; true
     } catch (e: CancellationException) { throw e } catch (_: Exception) { false }
 
     /**
      * Measures and records the inked digits of one answer (see [writtenDigits]), and keeps the answer's strokes
      * under [attemptKey] in [ink], pruned to the newest [AttemptInkStore.KEEP_ATTEMPTS] attempts. Never affects XP.
+     * Take [generation] when the answer is checked: a reset after that drops this answer's data.
      */
-    suspend fun recordAnswer(digits: List<WrittenDigit>, attemptKey: String? = null): Boolean {
+    suspend fun recordAnswer(digits: List<WrittenDigit>, attemptKey: String? = null, generation: Long = HandwritingData.generation): Boolean {
         val reports = withContext(compute) { digits.legibility() }
         val kept = if (attemptKey == null || ink == null) true else try {
             withContext(io) {
                 val cells = digits.filter { it.strokes.isNotEmpty() }.associate { it.cell to CellInk(it.strokes, it.digit) }
-                if (cells.isNotEmpty()) { ink.save(attemptKey, cells); ink.prune(AttemptInkStore.KEEP_ATTEMPTS) }
+                if (cells.isNotEmpty()) HandwritingData.ifCurrent(generation) { ink.save(attemptKey, cells); ink.prune(AttemptInkStore.KEEP_ATTEMPTS) }
             }; true
         } catch (e: CancellationException) { throw e } catch (_: Exception) { false }
-        return record(reports) && kept
+        return record(reports, generation) && kept
     }
 
     /** Trace accuracy against [guide], off the main thread. */

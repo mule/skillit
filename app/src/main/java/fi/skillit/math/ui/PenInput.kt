@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import fi.skillit.engine.adaptive.InputMethod
-import fi.skillit.coach.writtenDigits
+import fi.skillit.coach.rowInk
 import fi.skillit.ink.*
 import kotlinx.coroutines.delay
 
@@ -80,13 +80,11 @@ class PenInput(private val recognizer: DigitRecognizer) : DigitInput {
         }
     }
 
-    override fun written(item: String): List<fi.skillit.coach.WrittenDigit> {
-        var offset = 0
-        // One running index over all of the item's cells, so each written digit has its own number.
-        return rows.filterKeys { it.first == item }.entries.sortedBy { it.key.second }.flatMap { (_, state) ->
-            state.writtenDigits().map { it.copy(cell = offset + it.cell) }.also { offset += state.cells }
-        }
-    }
+    /** Ink already handed to the coach, per row, so a retry only reports the cells the child rewrote. */
+    private val reported = mutableMapOf<Pair<String, String>, Map<Int, List<InkStroke>>>()
+
+    override fun written(item: String): List<fi.skillit.coach.WrittenDigit> =
+        fi.skillit.coach.writtenSince(item, rows.filterKeys { it.first == item }.mapValues { it.value.rowInk() }, reported)
 
     override fun width(cell: InputCell) = (if (cell.small) CellStyle.small else CellStyle.digit) * cell.maxDigits
 

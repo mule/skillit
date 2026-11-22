@@ -173,6 +173,8 @@ fun MathScreen(env: MathEnvironment, onScreenChanged: () -> Unit = {}, onExit: (
         val exercises = c?.exercises(a.plan) ?: return@remember null
         runCatching { Triple(a, exercises, c.session(exercises, a.events)) }.getOrNull()
     }
+    // One clarity coach per lesson, above the pane switch, so visiting the map or the studio keeps its limits.
+    val clarity = remember(active?.first?.plan) { ClarityCoach() }
     // A new screen or a new question starts at the top, like music and nature.
     val screenKey = listOf(pane, active?.third?.current?.token, active?.third?.complete, saved?.pin == null)
     LaunchedEffect(screenKey) { onScreenChanged() }
@@ -237,7 +239,7 @@ fun MathScreen(env: MathEnvironment, onScreenChanged: () -> Unit = {}, onExit: (
             Pane.LESSON -> if (active == null) LaunchedEffect(Unit) { pane = Pane.MAP } else {
                 val (lesson, exercises, session) = active
                 val pen = remember(lesson.plan) { env.penInput() }
-                LessonScreen(c, lesson, exercises, session, if (inputMode == InputMode.NumberPad) PadInput else pen, busy, env.clock, env.coach(),
+                LessonScreen(c, lesson, exercises, session, if (inputMode == InputMode.NumberPad) PadInput else pen, busy, env.clock, env.coach(), clarity, scope,
                     onEvent = { updated, attempt -> commit(lesson, updated, attempt) },
                     onFinish = { xp, reward ->
                         val old = saved.lessons[lesson.plan.stopId]
@@ -327,7 +329,9 @@ private fun MathMap(course: MathCourse, progress: MathProgress, active: ActiveLe
 @Composable
 private fun LessonScreen(
     course: MathCourse, lesson: ActiveLesson, exercises: List<PackExercise>, session: ExerciseSession,
-    input: DigitInput, busy: Boolean, clock: () -> Long, coach: CoachEnvironment?,
+    input: DigitInput, busy: Boolean, clock: () -> Long, coach: CoachEnvironment?, clarity: ClarityCoach,
+    /** Outlives this screen, so an answer's handwriting data is still saved if the lesson closes right away. */
+    background: kotlinx.coroutines.CoroutineScope,
     onEvent: (ExerciseSession, AttemptEvent?) -> Unit, onFinish: (Int, String?) -> Unit, onMap: () -> Unit,
 ) {
     val stop = course.stop(lesson.plan.stopId)
@@ -361,9 +365,7 @@ private fun LessonScreen(
     val feedback = session.feedback
     // Handwriting coach (#28): measured after an answer is checked; may offer an optional clarity moment.
     // Neither touches the session, so XP and progress depend only on the math.
-    val clarity = remember(lesson.plan) { ClarityCoach() }
     var prompt by remember(attempt.token) { mutableStateOf<ClarityPrompt?>(null) }
-    val scope = rememberCoroutineScope()
     val previous = if (feedback == null && attempt.retry) session.outcomes.lastOrNull { it.questionId == exercise.id }?.check else null
 
     Text(stop.label, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
@@ -392,7 +394,8 @@ private fun LessonScreen(
                     val written = input.written(exercise.id)
                     prompt = clarity.afterAnswer(written)
                     // Strokes are kept per attempt (pruned to AttemptInkStore.KEEP_ATTEMPTS); only aggregates may ever sync.
-                    scope.launch { coach.recordAnswer(written, attemptKey = event.eventId) }
+                    val generation = HandwritingData.generation // taken now: a reset after this drops the answer's data
+                    background.launch { coach.recordAnswer(written, attemptKey = event.eventId, generation = generation) }
                 }
             }
         }, enabled = !busy && draft.complete, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Tarkista") }

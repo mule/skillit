@@ -10,7 +10,9 @@ data class AttemptInk(val key: String, val savedAtMs: Long, val cells: Map<Int, 
 data class CellInk(val strokes: List<InkStroke>, val digit: Int?)
 
 /**
- * Stores pen strokes per attempt in app-private storage ([dir] should be under `Context.filesDir`).
+ * Stores pen strokes per attempt in app-private storage. [dir] must be under `Context.noBackupFilesDir`;
+ * production code gets the store from `fi.skillit.coach.HandwritingData.attemptInk`, which also serialises it
+ * with reset.
  * Nothing here is uploaded: `allowBackup=false` and `data_extraction_rules.xml` exclude all files from
  * cloud backup and device transfer, and the app has no upload code (CI's privacy gate checks imports).
  * Only aggregate legibility scores may ever be synced (epic #31), never these files.

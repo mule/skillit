@@ -29,16 +29,20 @@ import java.io.File
 /** A pen whose tap "writes" an unsure 9, and which reports that digit's ink to the coach. */
 class UnsurePen(private val digits: List<WrittenDigit>) : DigitInput {
     override val method = InputMethod.PEN
+    /** Item keys the board drew cells for, and the keys the lesson asked [written] for: they must match. */
+    val cellItems = mutableSetOf<String>()
+    val writtenItems = mutableListOf<String>()
     @androidx.compose.runtime.Composable
     override fun Cell(item: String, cell: InputCell, value: CellValue, focused: Boolean, mark: CellMark, enabled: Boolean,
                       onFocus: () -> Unit, onValue: (CellValue) -> Unit, modifier: Modifier) {
+        cellItems += item
         androidx.compose.material3.TextButton(onClick = { onValue(CellValue(9, .4)) }, modifier = modifier) {
             androidx.compose.material3.Text("Kynäruutu ${cell.label}: ${value.text}")
         }
     }
     @androidx.compose.runtime.Composable
     override fun Controls(focused: InputCell?, value: CellValue?, enabled: Boolean, onValue: (CellValue) -> Unit, onNext: () -> Unit) {}
-    override fun written(item: String) = digits
+    override fun written(item: String) = digits.also { writtenItems += item }
 }
 
 /** #28 wired into #27: Numeropaja from the map, the clarity moment after an answer, the parent trend. */
@@ -96,6 +100,9 @@ class CoachInLessonTest {
         // N1: the attempt's strokes are kept under its event id (and pruned on every save).
         val saved = ink.load(attempts.events.single().eventId)!!
         assertEquals(9, saved.cells.getValue(0).digit)
+        // Review S2: the key the lesson asks the pen for is the key the board writes cells under.
+        assertEquals(1, pen.writtenItems.size)
+        assertTrue("${pen.writtenItems} in ${pen.cellItems}", pen.writtenItems.single() in pen.cellItems)
         assertEquals(nine.strokes, saved.cells.getValue(0).strokes)
     }
 

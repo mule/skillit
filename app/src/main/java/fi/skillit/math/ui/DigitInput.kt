@@ -69,8 +69,9 @@ interface DigitInput {
     fun Controls(focused: InputCell?, value: CellValue?, enabled: Boolean, onValue: (CellValue) -> Unit, onNext: () -> Unit)
 
     /**
-     * The digits written for [item], with ink and recogniser confidence, for the handwriting coach (#28).
-     * Empty for the number pad, so it never offers a "write it more clearly" moment.
+     * The digits written for [item] since the previous call, with ink and recogniser confidence, for the
+     * handwriting coach (#28). Call once per checked answer. Empty for the number pad, so it never offers a
+     * "write it more clearly" moment.
      */
     fun written(item: String): List<fi.skillit.coach.WrittenDigit> = emptyList()
 }
