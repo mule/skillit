@@ -19,7 +19,7 @@
 set -euo pipefail
 
 EXT_RE='\.(pdf|jpe?g|png|hei[cf]|tiff?|webp|gif|bmp|avif|dng|zip|7z|rar)$'
-MIME_RE='^(image/|application/(pdf|zip|x-7z-compressed|x-rar|vnd\.rar))'
+MIME_RE='^(image/|application/(pdf|x-pdf|(x-)?zip(-compressed)?|java-archive|x-7z-compressed|x-rar(-compressed)?|vnd\.rar|x-tar|g?zip|x-gzip|x-bzip2|x-xz|x-archive))'
 ALLOWLIST=scripts/scan-allowlist.txt
 
 command -v file >/dev/null || { echo "check-no-scans: 'file' command not found" >&2; exit 2; }

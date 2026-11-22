@@ -72,7 +72,7 @@ expect 0 "F3 extensionless script passes" "$check" -C "$r"
 r="$(new_repo)"; png "$r/docs/page14.txt"; add "$r"
 expect 1 "F3 image renamed to .txt fails (content sniff)" "$check" -C "$r"
 r="$(new_repo)"; (cd "$r" && echo x >inner.txt && git hash-object -w inner.txt >/dev/null && git archive --format=zip -o w.jar "$(printf '100644 blob %s\tinner.txt\n' "$(git hash-object inner.txt)" | git mktree)" && rm inner.txt); add "$r"
-expect 1 "F3 zip with other extension fails" "$check" -C "$r"
+expect 1 "F3 zip with other extension fails ($(file --mime-type -b "$r/w.jar"))" "$check" -C "$r"
 r="$(new_repo)"; echo 'x' >"$r/docs/a.md"; add "$r"
 expect 1 "missing 'file' command fails closed" env PATH="$tmp/nofile" /bin/bash "$check" -C "$r"
 
