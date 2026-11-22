@@ -117,17 +117,33 @@ island on the map; the original adventure resumes by default on a cold launch.
 ## Source material
 
 Exercises follow the topics of the child's school textbooks and workbooks, but
-the scanned pages themselves are never part of this repo. They are copyrighted and
-include a child's handwriting.
+scanned pages must never be in this repo. They are copyrighted and include a
+child's handwriting, and this repo is public: anything pushed is already published.
 
-- Scans live only in the git-ignored local folder `docs/resources/` (also ignored:
-  `*.scan.pdf`). They never go into git or onto the server.
+- Scans live only in the git-ignored local folder `docs/resources/` (also ignored
+  anywhere: `*.scan.pdf`). They are never committed and never uploaded to the server.
 - Packs hold only topics, parameters and newly written exercises: original content
   derived from the topics, not copied pages.
-- CI runs `scripts/check-no-scans.sh`, which fails on any PDF, JPG, JPEG, PNG or
-  HEIC under `docs/`. Run it locally the same way; its test is
-  `scripts/test-check-no-scans.sh`. A genuine non-scan image can be allowed by
-  adding its path to `scripts/scan-allowlist.txt`.
+
+**What the guard checks.** `scripts/check-no-scans.sh` rejects, anywhere in the tree:
+any `*.scan.pdf`; any PDF, JPG/JPEG, PNG, HEIC/HEIF, TIF/TIFF, WebP, GIF, BMP, AVIF,
+DNG, ZIP, 7z or RAR file; extensionless files whose content is an image, PDF or
+archive; and file names containing a newline. The only exceptions are exact paths in
+`scripts/scan-allowlist.txt` (owned via `.github/CODEOWNERS`; never `*.scan.pdf`).
+The `nature_*.jpg` illustrations are allowlisted pending an image-rights decision (#19).
+It is a filename/type check, not image recognition: renaming a scan to `.txt` gets past it.
+
+- **Locally (the only layer that stops a scan before it is public):** enable the
+  hooks once per clone with `git config core.hooksPath scripts/hooks`. `pre-commit`
+  checks the index; `pre-push` checks every commit being pushed.
+- **CI:** the `scan-guard` job checks the tree and every commit in the push/PR
+  range, so a scan added and later removed still fails. CI runs after the push, so
+  it detects a leak but cannot prevent it. Tests: `scripts/test-check-no-scans.sh`.
+
+**If a scan leaks** (it was pushed, even on a branch or PR): stop pushing; remove it
+from all history (`git filter-repo --invert-paths --path <file>`) and force-push every
+affected branch; then ask GitHub Support to purge cached views and `refs/pull/*`
+refs, since closed PRs keep the old commits reachable. Treat the file as published.
 
 ## Local verification
 
