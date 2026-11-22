@@ -20,13 +20,15 @@ import androidx.ink.strokes.Stroke
 /**
  * A row of one-digit boxes the child writes into.
  *
- * Live strokes go through androidx.ink's [InProgressStrokesView] (front-buffered, low latency).
- * Finished strokes are drawn here with [CanvasStrokeRenderer]. In parallel the view records its own
+ * Live strokes go through androidx.ink's [InProgressStrokesView] (front-buffered, low latency) when
+ * [lowLatency] is on. Emulators turn it off: their software renderer crashes hwui's RenderThread when a
+ * front-buffered layer is torn down mid-frame (seen on the API 35 CI emulator), so there the live stroke is
+ * drawn on the normal Canvas instead. Finished strokes are drawn here with [CanvasStrokeRenderer]. In parallel the view records its own
  * [InkStroke] points from the same MotionEvents: those feed recognition and local storage and do not
  * depend on ink's asynchronous finish callback.
  */
 @SuppressLint("ViewConstructor")
-class DigitInkView(context: Context, boxCount: Int) : FrameLayout(context), InProgressStrokesFinishedListener {
+class DigitInkView(context: Context, boxCount: Int, lowLatency: Boolean = !isEmulator()) : FrameLayout(context), InProgressStrokesFinishedListener {
     var boxCount: Int = boxCount
         set(value) { field = value; requestLayout(); invalidate() }
 
@@ -39,7 +41,7 @@ class DigitInkView(context: Context, boxCount: Int) : FrameLayout(context), InPr
     private fun changed() { revision++; onInkChanged(strokes) }
 
     val policy = PenPolicy()
-    private val live = InProgressStrokesView(context)
+    private val live: InProgressStrokesView? = if (lowLatency) InProgressStrokesView(context) else null
     private val renderer = CanvasStrokeRenderer.create()
     private val identity = Matrix()
     private val brush = Brush.createWithColorIntArgb(StockBrushes.pressurePen(), Color.rgb(0x16, 0x29, 0x27), 9f * resources.displayMetrics.density / 2f, 0.1f)
@@ -51,6 +53,8 @@ class DigitInkView(context: Context, boxCount: Int) : FrameLayout(context), InPr
     private var activePointer = -1
     private var activeIsPen = false
     private var activeId: InProgressStrokeId? = null
+    /** A stroke is being written (not erasing). Independent of [activeId], which is null without [live]. */
+    private var writing = false
     private var activePoints = mutableListOf<InkPoint>()
     private var erasing = false
     private var hoverX = Float.NaN
@@ -68,14 +72,16 @@ class DigitInkView(context: Context, boxCount: Int) : FrameLayout(context), InPr
 
     init {
         setWillNotDraw(false)
-        addView(live, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
-        live.addFinishedStrokesListener(this)
+        live?.let {
+            addView(it, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+            it.addFinishedStrokesListener(this)
+        }
         contentDescription = "Kirjoitusruudukko"
     }
 
     fun clear() {
-        live.cancelUnfinishedStrokes()
-        activePointer = -1; activeId = null; activePoints = mutableListOf(); erasing = false
+        live?.cancelUnfinishedStrokes()
+        activePointer = -1; activeId = null; writing = false; activePoints = mutableListOf(); erasing = false
         written.clear(); pending.clear()
         invalidate(); changed()
     }
@@ -96,7 +102,7 @@ class DigitInkView(context: Context, boxCount: Int) : FrameLayout(context), InPr
 
     override fun onStrokesFinished(strokes: Map<InProgressStrokeId, Stroke>) {
         strokes.forEach { (id, stroke) -> pending.remove(id)?.rendered = stroke }
-        live.removeFinishedStrokes(strokes.keys)
+        live?.removeFinishedStrokes(strokes.keys)
         invalidate()
     }
 
@@ -106,8 +112,8 @@ class DigitInkView(context: Context, boxCount: Int) : FrameLayout(context), InPr
         // A pen coming near while a finger is writing: that finger is a palm or resting hand. Drop its stroke now,
         // before it lifts, so it is never committed (Codex re-check should-fix 1).
         if (policy.isPen(tool) && activePointer != -1 && !activeIsPen) {
-            activeId?.let { live.cancelStroke(it, event) }
-            activePointer = -1; activeId = null; activePoints = mutableListOf(); erasing = false
+            activeId?.let { live?.cancelStroke(it, event) }
+            activePointer = -1; activeId = null; writing = false; activePoints = mutableListOf(); erasing = false
         }
         if (event.actionMasked == MotionEvent.ACTION_HOVER_EXIT || !policy.isPen(tool)) { hoverX = Float.NaN }
         else { hoverX = event.x; hoverY = event.y; hoverEraser = policy.isEraser(tool, event.buttonState) }
@@ -125,8 +131,8 @@ class DigitInkView(context: Context, boxCount: Int) : FrameLayout(context), InPr
                 if (activePointer != -1) {
                     // A pen landing while a finger writes: the finger stroke was a palm or a resting hand. Drop it.
                     if (!policy.isPen(tool) || activeIsPen) return true
-                    activeId?.let { live.cancelStroke(it, event) }
-                    activeId = null; erasing = false
+                    activeId?.let { live?.cancelStroke(it, event) }
+                    activeId = null; writing = false; erasing = false
                 }
                 if (!policy.accepts(tool)) return true
                 activeIsPen = policy.isPen(tool)
@@ -138,7 +144,8 @@ class DigitInkView(context: Context, boxCount: Int) : FrameLayout(context), InPr
                 else {
                     if (Build.VERSION.SDK_INT >= 30) requestUnbufferedDispatch(event)
                     activePoints = mutableListOf(point(event, index))
-                    activeId = live.startStroke(event, activePointer, brush)
+                    activeId = live?.startStroke(event, activePointer, brush)
+                    writing = true
                 }
             }
             MotionEvent.ACTION_MOVE -> {
@@ -147,27 +154,28 @@ class DigitInkView(context: Context, boxCount: Int) : FrameLayout(context), InPr
                 if (erasing) {
                     for (h in 0 until event.historySize) eraseAt(event.getHistoricalX(i, h), event.getHistoricalY(i, h))
                     eraseAt(event.getX(i), event.getY(i))
-                } else activeId?.let {
+                } else if (writing) {
                     for (h in 0 until event.historySize) activePoints += InkPoint(event.getHistoricalX(i, h), event.getHistoricalY(i, h), event.getHistoricalEventTime(h), event.getHistoricalPressure(i, h))
                     activePoints += point(event, i)
-                    live.addToStroke(event, activePointer, it, null)
+                    activeId?.let { live?.addToStroke(event, activePointer, it, null) } ?: invalidate()
                 }
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
                 val pointerEnded = action == MotionEvent.ACTION_CANCEL || event.getPointerId(index) == activePointer
                 if (!pointerEnded || activePointer == -1) return true
                 val id = activeId
-                if (id != null) {
-                    if (policy.isCanceled(action, event.flags)) live.cancelStroke(id, event)
+                if (writing) {
+                    if (policy.isCanceled(action, event.flags)) id?.let { live?.cancelStroke(it, event) }
                     else {
                         activePoints += point(event, index)
-                        live.finishStroke(event, activePointer, id)
+                        id?.let { live?.finishStroke(event, activePointer, it) }
                         val w = Written(InkStroke(activePoints.toList()))
-                        written += w; pending[id] = w
+                        written += w; if (id != null) pending[id] = w
                         changed()
                     }
                 }
-                activePointer = -1; activeId = null; erasing = false; activePoints = mutableListOf()
+                activePointer = -1; activeId = null; writing = false; erasing = false; activePoints = mutableListOf()
+                invalidate()
             }
         }
         return true
@@ -193,6 +201,12 @@ class DigitInkView(context: Context, boxCount: Int) : FrameLayout(context), InPr
             if (s != null) renderer.draw(canvas, s, identity)
             else w.ink.points.zipWithNext().forEach { (a, b) -> canvas.drawLine(a.x, a.y, b.x, b.y, thin) }
         }
+        // Without the front-buffered layer, the stroke in progress is drawn here.
+        if (live == null && writing) activePoints.zipWithNext().forEach { (a, b) -> canvas.drawLine(a.x, a.y, b.x, b.y, thin) }
         if (!hoverX.isNaN()) canvas.drawCircle(hoverX, hoverY, if (hoverEraser) eraserRadius else brush.size, cursorPaint)
     }
 }
+
+/** True on Android emulators, whose software GL can't host androidx.ink's front-buffered layer reliably. */
+fun isEmulator(): Boolean =
+    Build.HARDWARE in setOf("ranchu", "goldfish") || Build.PRODUCT.startsWith("sdk") || Build.FINGERPRINT.startsWith("generic")
