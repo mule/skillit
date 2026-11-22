@@ -117,6 +117,8 @@ class MathScreenTest {
         pin("1111")
         compose.waitUntil(5_000) { store.progress.pin!!.failures == 1 }
         compose.onNodeWithText("Väärä koodi.").assertExists()
+        // Keys stay disabled while the guess is checked and saved; wait until the next guess can be typed.
+        compose.waitUntil(5_000) { runCatching { compose.onNodeWithContentDescription("PIN 2").assertIsEnabled() }.isSuccess }
         pin("2468")
         compose.waitUntil(5_000) { compose.onAllNodesWithText("Numeronäppäimet").fetchSemanticsNodes().isNotEmpty() }
         assertEquals(0, store.progress.pin!!.failures)

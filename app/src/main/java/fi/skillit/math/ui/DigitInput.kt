@@ -29,7 +29,11 @@ data class InputCell(val id: String, val label: String, val maxDigits: Int, val 
  * digits ([ask]): the board then asks "Tarkoititko 4 vai 9?" and never checks the answer until the
  * child picks one. The pad always gives a sure value with null confidence.
  */
-data class CellValue(val value: Int? = null, val confidence: Double? = null, val ask: Pair<Int, Int>? = null, val askCell: Int = 0) {
+data class CellValue(
+    val value: Int? = null, val confidence: Double? = null, val ask: Pair<Int, Int>? = null, val askCell: Int = 0,
+    /** Pen ink changed and is not recognised yet; the answer cannot be checked meanwhile. */
+    val pending: Boolean = false,
+) {
     val text: String get() = value?.toString() ?: ""
     companion object { val Empty = CellValue() }
 }

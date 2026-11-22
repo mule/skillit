@@ -33,4 +33,14 @@ class PenValueTest {
         assertEquals(CellValue.Empty, PenInput.penValue(null, listOf(null), emptyMap(), emptyMap()))
         assertEquals(CellValue.Empty, PenInput.penValue(null, listOf(null), mapOf(0 to DigitReading.Unreadable(emptyList())), emptyMap()))
     }
+
+    @Test fun inkStillBeingReadKeepsAFilledBoardUncheckable() {
+        val draft = AnswerDraft(BoardKind.Number(word = false))
+        draft.set("answer", CellValue(27, .9))
+        assertEquals(true, draft.complete)
+        draft.set("answer", CellValue(pending = true))
+        assertEquals(false, draft.complete)
+        draft.set("answer", CellValue(28, .8))
+        assertEquals(true, draft.complete)
+    }
 }

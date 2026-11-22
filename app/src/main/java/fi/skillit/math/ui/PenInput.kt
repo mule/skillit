@@ -56,8 +56,16 @@ class PenInput(private val recognizer: DigitRecognizer) : DigitInput {
             }
         }) {
             Box(contentAlignment = Alignment.CenterStart) {
-                InkBoxes(state.cells, state.ink, Modifier.border(border, RoundedCornerShape(4.dp)), boxSize = box,
-                    initial = state.penStrokes, onInk = { state.inkChanged(it); inked++ })
+                // One native ink view per item and cell: InkBoxes restores `initial` only when its view is created,
+                // so without the key the next question would reuse (show and recognise) this question's ink.
+                key(item, cell.id) {
+                    InkBoxes(state.cells, state.ink, Modifier.border(border, RoundedCornerShape(4.dp)), boxSize = box,
+                        initial = state.penStrokes, onInk = {
+                            state.inkChanged(it); inked++
+                            // The old reading no longer matches the ink: not checkable until this ink is recognised.
+                            if (enabled) onValue(CellValue(pending = true))
+                        })
+                }
                 // A restored answer (after resuming) has no ink: show its digits in their boxes until the child writes.
                 if (inked == 0 && state.penStrokes.isEmpty() && value.value != null) Row {
                     value.text.padStart(state.cells).forEach { ch ->

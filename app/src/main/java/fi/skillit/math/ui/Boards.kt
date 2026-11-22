@@ -101,7 +101,7 @@ class AnswerDraft(val kind: BoardKind) {
     var focused by mutableStateOf(kind.cells.firstOrNull()?.id)
 
     val pendingAsk: InputCell? get() = kind.cells.firstOrNull { values[it.id]?.ask != null }
-    val complete: Boolean get() = kind.required.all { values[it]?.value != null } && pendingAsk == null
+    val complete: Boolean get() = kind.required.all { values[it]?.value != null } && pendingAsk == null && values.values.none { it.pending }
 
     /** Every cell, empty ones as explicit nulls: the attempt log keeps the whole submitted map. */
     fun input(): AnswerInput.Cells = AnswerInput.Cells(kind.cells.associate { it.id to values[it.id]?.value })

@@ -374,7 +374,8 @@ private fun LessonScreen(
                 onEvent(updated, event)
             }
         }, enabled = !busy && draft.complete, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Tarkista") }
-        if (!draft.complete) Text("Täytä vastausruudut, niin voit tarkistaa.", style = MaterialTheme.typography.bodyMedium)
+        if (draft.values.values.any { it.pending }) Text("Luetaan käsialaa…", style = MaterialTheme.typography.bodyMedium)
+        else if (!draft.complete) Text("Täytä vastausruudut, niin voit tarkistaa.", style = MaterialTheme.typography.bodyMedium)
         OutlinedButton(onClick = { act { it.showHint(attempt.token) } }, enabled = !busy && !session.hintVisible,
             modifier = Modifier.heightIn(min = 48.dp)) { Text("Vihje") }
         if (session.hintVisible) Text(exercise.hint, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
