@@ -178,7 +178,17 @@ git -C "$r" push -q --no-verify private HEAD:refs/heads/main >/dev/null 2>&1
 expect 1 "MUST2 new branch on empty origin checks history known only to 'private'" git -C "$r" push -q origin HEAD:refs/heads/main
 [[ -z "$(git --git-dir="$public" for-each-ref)" ]] && echo "PASS MUST2 nothing reached origin" || { echo "FAIL MUST2 refs reached origin"; fails=1; }
 expect 1 "MUST2 push to a bare URL checks full history" git -C "$r" push -q "$public" HEAD:refs/heads/main
-# A clean new branch on a remote that already has the base is checked from there.
+# Fetch URL != push URL: refs/remotes/origin/* mirror the private fetch remote.
+r3="$(new_repo)"; mkdir -p "$r3/scripts/hooks"; cp "$check" "$r3/scripts/"; cp "$hooks"/* "$r3/scripts/hooks/"
+git -C "$r3" config core.hooksPath scripts/hooks; commit "$r3" base
+pdf "$r3/docs/page.pdf"; git -C "$r3" add docs/page.pdf; git -C "$r3" commit -qm scan --no-verify
+priv3="$tmp/priv3.git" pub3="$tmp/pub3.git"; git init -q --bare "$priv3"; git init -q --bare "$pub3"
+git -C "$r3" push -q --no-verify "$priv3" HEAD:refs/heads/main >/dev/null 2>&1
+git -C "$r3" remote add origin "$priv3"; git -C "$r3" config remote.origin.pushurl "$pub3"
+git -C "$r3" fetch -q origin
+expect 1 "MUST2 pushurl differing from fetch url: hook rejects" git -C "$r3" push -q origin HEAD:refs/heads/main
+[[ -z "$(git --git-dir="$pub3" for-each-ref)" ]] && echo "PASS MUST2 pushurl: public repo stays empty" || { echo "FAIL MUST2 pushurl: refs reached public"; fails=1; }
+# A clean new branch is checked over its full history and passes.
 r2="$(new_repo)"; mkdir -p "$r2/scripts/hooks"; cp "$check" "$r2/scripts/"; cp "$hooks"/* "$r2/scripts/hooks/"
 git -C "$r2" config core.hooksPath scripts/hooks; commit "$r2" base
 pub2="$tmp/pub2.git"; git init -q --bare "$pub2"; git -C "$r2" remote add origin "$pub2"
