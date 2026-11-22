@@ -21,9 +21,14 @@ object ErrorClassifier {
         if (spec is AnswerSpec.ColumnMultiplication) {
             val layout = AnswerSpec.ColumnMultiplication.layout(spec.factors[0], spec.factors[1]).cells
             val result = spec.cells.filter { it.kind == DigitKind.RESULT }
-            val given = if (result.all { values[it.id] in 0..9 })
-                result.sumOf { values.getValue(it.id)!!.toLong() * pow10(it.column) } else null
-            if (given != null && shifted(spec.factors[0].toLong() * spec.factors[1], given))
+            // Omitted leading result cells represent zero for diagnosis; interior blanks remain unknown.
+            val highestWritten = result.filter { values[it.id] != null }.maxOfOrNull { it.column }
+            val given = if (highestWritten != null && result.all {
+                    values[it.id] in 0..9 || it.column > highestWritten && values[it.id] == null })
+                result.sumOf { (values[it.id] ?: 0).toLong() * pow10(it.column) } else null
+            val unshiftedPartials = spec.factors[0].toLong() * spec.factors[1].toString().sumOf { it - '0' }
+            if (given != null && (shifted(spec.factors[0].toLong() * spec.factors[1], given) ||
+                    spec.factors[1] >= 10 && given == unshiftedPartials))
                 return ErrorClass.PLACE_VALUE_SHIFT
             // Identify the actual missing incoming carry at a wrong digit, not just an empty scratch cell.
             val carryDropped = spec.cells.any { cell ->

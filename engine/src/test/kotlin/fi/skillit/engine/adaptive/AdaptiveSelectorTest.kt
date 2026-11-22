@@ -60,10 +60,42 @@ class AdaptiveSelectorTest {
     }
     @Test fun parentExplanationIsFinnishAndIncludesReasons() {
         val col = item(0).copy(answer = AnswerSpec.ColumnMultiplication.layout(27, 3))
-        val miss = AttemptEvent.record("math", 1, col.id, "column", JsonObject(emptyMap()), col.answer,
+        val miss = AttemptEvent.record("math", 1, col.id, col.generator!!.family, col.generator.params, col.answer,
             AnswerInput.Cells(mapOf("r0" to 1, "r1" to 6)), 0, false, InputMethod.PAD, null, 0)
         val selection = AdaptiveSelector(1).select("math", 1, listOf(col), listOf(miss), AdaptiveSelector.DAY)
         assertTrue(selection.explanation.contains("muistinumeroita"))
         assertTrue(selection.explanation.contains("kertausta"))
     }
+    private fun miss(item: PackExercise, answer: AnswerInput) = AttemptEvent.record("math", 1, item.id,
+        item.generator!!.family, item.generator.params, item.answer, answer, 0, false, InputMethod.PAD, null, 0)
+
+    @Test fun tableExplanationNamesOnlyTheMissedFactWithinABroadFamily() {
+        val tables = (2..10).map { table -> item(table, "times-table", table).copy(answer = AnswerSpec.MissingFactor(listOf(table, 8))) }
+        val missed = tables.single { it.id == "i7" }
+        val history = listOf(miss(missed, AnswerInput.Cells(mapOf("missing" to 55))))
+        val result = AdaptiveSelector(1).select("math", 1, tables, history, 1)
+        assertEquals("Harjoitellaan lisää: kertotauluja (7, 8).", result.explanation)
+        // Another item id with exactly the same opaque fact can use that evidence too.
+        val alias = missed.copy(id = "alias")
+        assertEquals(result.explanation, AdaptiveSelector(1).select("math", 1, listOf(alias), history, 1).explanation)
+        // Even a reused item id must not inherit a different fact's diagnosis.
+        val different = missed.copy(generator = missed.generator!!.copy(params = JsonObject(emptyMap())))
+        assertFalse(AdaptiveSelector(1).select("math", 1, listOf(different), history, 1).explanation.contains("kertotauluja"))
+    }
+    @Test fun carryAndPlaceValueMissesDoNotClaimTableWeaknessAndTenIsExcluded() {
+        val col = item(1).copy(answer = AnswerSpec.ColumnMultiplication.layout(27, 3))
+        val carry = miss(col, AnswerInput.Cells(mapOf("r0" to 1, "r1" to 6)))
+        val carryReason = AdaptiveSelector(1).select("math", 1, listOf(col), listOf(carry), 1).explanation
+        assertTrue(carryReason.contains("muistinumeroita"))
+        assertFalse(carryReason.contains("kertotauluja"))
+        val ten = item(2).copy(answer = AnswerSpec.MissingFactor(listOf(7, 10)))
+        val shift = miss(ten, AnswerInput.Cells(mapOf("missing" to 7)))
+        val shiftReason = AdaptiveSelector(1).select("math", 1, listOf(ten), listOf(shift), 1).explanation
+        assertTrue(shiftReason.contains("lukujen paikkoja"))
+        assertFalse(shiftReason.contains("kertotauluja"))
+        val fact = miss(ten, AnswerInput.Cells(mapOf("missing" to 69)))
+        assertEquals("Harjoitellaan lisää: kertotauluja (7).",
+            AdaptiveSelector(1).select("math", 1, listOf(ten), listOf(fact), 1).explanation)
+    }
+
 }

@@ -59,4 +59,14 @@ class ErrorClassifierTest {
         assertEquals(ErrorClass.OTHER, ErrorClassifier.classify(spec, AnswerInput.number(17), InputMethod.PAD, 0.2))
         assertThrows(IllegalArgumentException::class.java) { ErrorClassifier.classify(spec, AnswerInput.Choice("x")) }
     }
+    @Test fun unshiftedPartialProductsAreAPlaceValueError() {
+        // 23*5 + 23*4 = 207, instead of 23*5 + 23*40 = 1035.
+        assertEquals(ErrorClass.PLACE_VALUE_SHIFT, column(23, 45, "r0" to 7, "r1" to 0, "r2" to 2))
+        assertEquals(ErrorClass.PLACE_VALUE_SHIFT, column(23, 45, "r0" to 7, "r1" to 0, "r2" to 2, "r3" to 0))
+        assertEquals(ErrorClass.OTHER, column(23, 45, "r0" to 8, "r1" to 0, "r2" to 2))
+        assertEquals(ErrorClass.OTHER, column(23, 45, "r0" to 7, "r2" to 2))
+        val spec = AnswerSpec.ColumnMultiplication.layout(23, 45)
+        assertNull(ErrorClassifier.classify(spec, AnswerInput.Cells(spec.cells.filter { it.required }.associate { it.id to it.expected })))
+    }
+
 }

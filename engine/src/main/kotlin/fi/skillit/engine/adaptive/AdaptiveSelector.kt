@@ -58,10 +58,15 @@ class AdaptiveSelector(private val seed: Long) {
             selected += remaining.removeAt(index)
         }
         val weak = selected.filter { item -> evidence(item).any { !it.correct } }
-        val errors = weak.flatMap { evidence(it) }.filter { !it.correct }.mapNotNull { it.errorClass }.toSet()
-        val tables = weak.flatMap { item -> when (val answer = item.answer) {
-            is AnswerSpec.MissingFactor -> answer.factors.filterNotNull().filter { it in 2..10 }
-            is AnswerSpec.ColumnMultiplication -> answer.factors.filter { it in 2..10 }
+        fun factMisses(item: PackExercise): List<AttemptEvent> = evidence(item).filter { event ->
+            !event.correct && (item.generator?.let { event.family == it.family && event.params == it.params }
+                ?: (event.itemId == item.id))
+        }
+        val errors = selected.flatMap { factMisses(it) }.mapNotNull { it.errorClass }.toSet()
+        val tables = selected.filter { item -> factMisses(item).any { it.errorClass == ErrorClass.WRONG_TABLE_FACT } }
+            .flatMap { item -> when (val answer = item.answer) {
+            is AnswerSpec.MissingFactor -> answer.factors.filterNotNull().filter { it in 2..9 }
+            is AnswerSpec.ColumnMultiplication -> answer.factors.filter { it in 2..9 }
             else -> emptyList()
         } }.distinct().sorted()
         val reasons = buildList {
