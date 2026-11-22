@@ -60,9 +60,8 @@ class AttemptLogTest {
     @Test fun mathLogLeavesLegacyMusicAndNatureSaveFilesByteIdentical() {
         val root = temporary.newFolder()
         val data = File(root, "files/datastore").apply { mkdirs() }
-        val music = File(data, "skillit-progress.preferences_pb").apply {
-            writeBytes(javaClass.getResourceAsStream("/saves/music-v1.json")!!.readBytes())
-        }
+        val fixture = javaClass.getResourceAsStream("/saves/music-v1.json")!!.use { it.readBytes() }
+        val music = File(data, "skillit-progress.preferences_pb").apply { writeBytes(fixture) }
         val nature = File(data, "nature-progress.preferences_pb").apply { writeText("legacy-nature-progress-fixture") }
         val before = listOf(music, nature).associateWith { it.readBytes() }
         val dir = File(root, "no_backup/math-attempts")
