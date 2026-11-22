@@ -21,9 +21,9 @@ import androidx.ink.strokes.Stroke
  * A row of one-digit boxes the child writes into.
  *
  * Live strokes go through androidx.ink's [InProgressStrokesView] (front-buffered, low latency) when
- * [lowLatency] is on. Emulators turn it off: their software renderer crashes hwui's RenderThread when a
- * front-buffered layer is torn down mid-frame (seen on the API 35 CI emulator), so there the live stroke is
- * drawn on the normal Canvas instead. Finished strokes are drawn here with [CanvasStrokeRenderer]. In parallel the view records its own
+ * [lowLatency] is on. Emulators turn it off: on the API 35 CI emulator graphics-core's front buffer crashes
+ * hwui's RenderThread (SIGSEGV in DrawFrameTask) as soon as the layer is created, so there the live stroke is
+ * drawn on the normal Canvas instead. On devices the layer is also released on pause (see [pauseInk]). Finished strokes are drawn here with [CanvasStrokeRenderer]. In parallel the view records its own
  * [InkStroke] points from the same MotionEvents: those feed recognition and local storage and do not
  * depend on ink's asynchronous finish callback.
  */
@@ -41,7 +41,8 @@ class DigitInkView(context: Context, boxCount: Int, lowLatency: Boolean = !isEmu
     private fun changed() { revision++; onInkChanged(strokes) }
 
     val policy = PenPolicy()
-    private val lowLatency = lowLatency
+    /** Whether this view uses the front-buffered layer at all (false on emulators). */
+    val lowLatency = lowLatency
     /**
      * The front-buffered layer. It exists only while the screen is resumed and visible: [pauseInk] detaches it
      * so hwui never draws a front buffer for a hidden window (the CI RenderThread SIGSEGV), [resumeInk] adds a
