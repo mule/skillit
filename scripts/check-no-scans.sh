@@ -46,7 +46,8 @@ check_path() {
   [[ -n "${allowed[$path]-}" ]] && return
   if [[ "$lower" =~ $EXT_RE ]]; then bad+=("$path"); return; fi
   local mime
-  if ! mime="$(git cat-file blob "$blob" | file --mime-type -b -)" || [[ -z "$mime" ]]; then
+  # Sniff a real file, not a pipe: libmagic's results on stdin vary by platform.
+  if ! git cat-file blob "$blob" >"$work/blob" || ! mime="$(file --mime-type -b "$work/blob")" || [[ -z "$mime" ]]; then
     bad+=("$path (could not read content)"); return
   fi
   if [[ "$mime" =~ $MIME_RE ]]; then bad+=("$path ($mime)"); fi
