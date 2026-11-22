@@ -5,6 +5,14 @@ on:
 permissions:
   contents: read
 jobs:
+  scan-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test the scan guard
+        run: scripts/test-check-no-scans.sh
+      - name: No book scans under docs/
+        run: scripts/check-no-scans.sh
   build:
     runs-on: ubuntu-latest
     steps:
