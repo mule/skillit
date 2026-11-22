@@ -73,7 +73,8 @@ jobs:
           arch: x86_64
           profile: pixel_2
           script: |
-            ./gradlew :app:connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
+            adb logcat -c || true
+            ./gradlew :app:connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true || { mkdir -p app/build/reports; adb logcat -d -b main,crash > app/build/reports/emulator-logcat.txt; exit 1; }
             adb pull /sdcard/Android/data/fi.skillit/files/notation app/build/reports/notation
       - uses: actions/upload-artifact@v4
         if: always()
