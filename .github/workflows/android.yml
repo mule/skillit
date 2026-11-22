@@ -23,13 +23,25 @@ jobs:
           BEFORE: ${{ github.event.before }}
         run: |
           if [[ "$EVENT" == pull_request ]]; then
-            scripts/check-no-scans.sh --range "$PR_BASE..$PR_HEAD"
+            # Use the BASE branch's guard and allowlist, so a PR can't approve
+            # its own scan or weaken the guard it is checked by.
+            guard="$RUNNER_TEMP/check-no-scans.sh"
+            if git show "$PR_BASE:scripts/check-no-scans.sh" >"$guard" 2>/dev/null; then
+              chmod +x "$guard"
+            else
+              echo "::warning::Base has no scan guard yet; using this PR's guard with the base allowlist."
+              guard=scripts/check-no-scans.sh
+            fi
+            git diff "$PR_BASE" "$PR_HEAD" -- scripts/scan-allowlist.txt scripts/check-no-scans.sh scripts/hooks .github/CODEOWNERS --stat
+            git diff -U0 "$PR_BASE" "$PR_HEAD" -- scripts/scan-allowlist.txt | sed -n 's/^+\([^+].*\)$/\1/p' | sed 's/[[:space:]]*#.*//' | grep -v '^$' |
+              while IFS= read -r line; do echo "::warning file=scripts/scan-allowlist.txt::PR adds allowlist entry: $line"; done || true
+            "$guard" --policy "$PR_BASE" --range "$PR_BASE..$PR_HEAD"
           elif [[ -z "$BEFORE" || "$BEFORE" =~ ^0+$ ]] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
             # New ref, or force push over history we can't see: fail closed and
             # check the whole history of the pushed commit (cheap for this repo).
-            scripts/check-no-scans.sh --range "$GITHUB_SHA"
+            scripts/check-no-scans.sh --policy "$GITHUB_SHA" --range "$GITHUB_SHA"
           else
-            scripts/check-no-scans.sh --range "$BEFORE..$GITHUB_SHA"
+            scripts/check-no-scans.sh --policy "$GITHUB_SHA" --range "$BEFORE..$GITHUB_SHA"
           fi
   build:
     runs-on: ubuntu-latest

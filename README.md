@@ -126,11 +126,14 @@ child's handwriting, and this repo is public: anything pushed is already publish
   derived from the topics, not copied pages.
 
 **What the guard checks.** `scripts/check-no-scans.sh` rejects, anywhere in the tree:
-any `*.scan.pdf`; any PDF, JPG/JPEG, PNG, HEIC/HEIF, TIF/TIFF, WebP, GIF, BMP, AVIF,
-DNG, ZIP, 7z or RAR file; any other file whose content (`file --mime-type`) is an
-image, PDF or archive; and file names containing a newline. Merge commits are
+any `*.scan.pdf`; any image (JPG/JPEG, PNG, HEIC/HEIF, TIF/TIFF, WebP, GIF, BMP,
+AVIF, DNG), PDF/PostScript/DjVu, archive (ZIP, 7z, RAR, zstd, ISO, CBZ/CBR) or
+image-embedding document (Office, OpenDocument, EPUB, XPS); any other file whose
+content (`file --mime-type`) is one of those; and file names containing a newline. Merge commits are
 checked against every parent, and a git error or missing `file` fails the check. The only exceptions are exact paths in
 `scripts/scan-allowlist.txt` (owned via `.github/CODEOWNERS`; never `*.scan.pdf`).
+The allowlist is read from git, not the working tree: from the index for the
+tree check, and from the pushed commit for history checks.
 The `nature_*.jpg` illustrations are allowlisted pending an image-rights decision (#19).
 It checks names and file types, not what an image shows: a scan inside an
 unrecognised container format, or an allowlisted path overwritten with a scan, gets past it.
@@ -139,7 +142,10 @@ unrecognised container format, or an allowlisted path overwritten with a scan, g
   hooks once per clone with `git config core.hooksPath scripts/hooks`. `pre-commit`
   checks the index; `pre-push` checks every commit being pushed.
 - **CI:** the `scan-guard` job checks the tree and every commit in the push/PR
-  range, so a scan added and later removed still fails. CI runs after the push, so
+  range, so a scan added and later removed still fails. On pull requests the
+  range check uses the **base branch's** guard and allowlist, and every allowlist
+  line the PR adds is shown as a warning, so a PR cannot approve its own image:
+  land a new genuine image's allowlist entry in its own reviewed PR first. CI runs after the push, so
   it detects a leak but cannot prevent it. Tests: `scripts/test-check-no-scans.sh`.
 
 **If a scan leaks** (it was pushed, even on a branch or PR): stop pushing; remove it
