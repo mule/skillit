@@ -50,18 +50,25 @@ class AttemptLog internal constructor(private val directory: File) {
         val events = linkedMapOf<String, AttemptEvent>()
         val line = ByteArrayOutputStream()
         var committedEnd = 0L
-        while (journal.filePointer < journal.length()) {
-            val byte = journal.read()
-            if (byte == '\n'.code) {
-                val event = try { AttemptCodec.decode(line.toString("UTF-8")) }
-                catch (e: IllegalArgumentException) { throw IOException("Invalid committed attempt record", e) }
-                val previous = events.putIfAbsent(event.eventId, event)
-                if (previous != null) throw IOException("Duplicate UUID in committed attempt log")
-                line.reset()
-                committedEnd = journal.filePointer
-            } else {
-                if (line.size() >= MAX_LINE_BYTES) throw IOException("Attempt record exceeds size limit")
-                line.write(byte)
+        val buffer = ByteArray(8192)
+        var position = 0L
+        while (true) {
+            val size = journal.read(buffer)
+            if (size < 0) break
+            for (i in 0 until size) {
+                position++
+                val byte = buffer[i].toInt() and 0xff
+                if (byte == '\n'.code) {
+                    val event = try { AttemptCodec.decode(line.toString("UTF-8")) }
+                    catch (e: IllegalArgumentException) { throw IOException("Invalid committed attempt record", e) }
+                    val previous = events.putIfAbsent(event.eventId, event)
+                    if (previous != null) throw IOException("Duplicate UUID in committed attempt log")
+                    line.reset()
+                    committedEnd = position
+                } else {
+                    if (line.size() >= MAX_LINE_BYTES) throw IOException("Attempt record exceeds size limit")
+                    line.write(byte)
+                }
             }
         }
         if (journal.length() != committedEnd) {
