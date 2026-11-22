@@ -136,6 +136,34 @@ class LegibilityTest {
         assertNull(Trace.score(g, emptyList()))
     }
 
+    @Test fun aClockwiseZeroIsReversedEvenWhenItStartsAndEndsAtTheDot() {
+        val g = DigitGuides.of(0)
+        // The model reversed, both ends snapped to the green dot: coverage and accuracy are perfect.
+        val clockwise = g.strokes.map { it.reversed() }
+        assertTrue("starts at the dot", Legibility.dist(g.start, clockwise[0].first()) < 1e-4f && Legibility.dist(g.start, clockwise[0].last()) < 1e-4f)
+        val r = Trace.score(g, clockwise)!!
+        assertTrue(r.startedAtDot)
+        assertFalse("clockwise 0 must not pass", r.rightDirection)
+        assertTrue(r.tip!!.contains("nuolen suuntaan"))
+        assertTrue("the model itself goes the right way", Trace.score(g, g.strokes)!!.rightDirection)
+        (0..9).forEach { d -> val m = DigitGuides.of(d); assertTrue("guide $d", Trace.score(m, m.strokes)!!.rightDirection) }
+        (0..9).forEach { d -> val m = DigitGuides.of(d); assertFalse("reversed $d", Trace.score(m, listOf(m.strokes[0].reversed()))!!.rightDirection) }
+    }
+
+    @Test fun manyOverwrittenStrokesStayCheap() {
+        // A child writing over the same digit again and again instead of erasing (review: Codex should-fix 1).
+        val zero = Fixtures["neat-0"]
+        val scribble = List(60) { zero.strokes.single() }
+        val unit = Legibility.toUnit(scribble, zero.boxWidth, zero.boxHeight)
+        Legibility.measureUnit(0, unit) // warm-up (class loading, JIT)
+        val started = System.nanoTime()
+        val r = Legibility.measureUnit(0, unit)!!
+        Trace.score(DigitGuides.of(0), unit)
+        val ms = (System.nanoTime() - started) / 1_000_000
+        assertTrue("60 strokes took $ms ms", ms < 500)
+        assertEquals(Metric.Single, r.weakest)
+    }
+
     @Test fun everyDigitHasAGuideStartingAtTheTop() {
         assertEquals((0..9).toList(), DigitGuides.all.map { it.digit })
         DigitGuides.all.forEach { g -> assertTrue("${g.digit} starts high: ${g.start}", g.start.y < 0.5f) }

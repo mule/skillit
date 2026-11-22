@@ -113,6 +113,37 @@ class CoachLogicTest {
         assertTrue("nothing to measure without ink", digits.legibility().isEmpty())
     }
 
+    @Test fun answerInkIsKeptPerAttemptAndPruned() = kotlinx.coroutines.runBlocking {
+        val ink = fi.skillit.ink.AttemptInkStore(File(tmp.root, "attempts"), clock = { now++ })
+        val env = CoachEnvironment(store(), null, io = kotlinx.coroutines.Dispatchers.Unconfined, compute = kotlinx.coroutines.Dispatchers.Unconfined, ink = ink)
+        val f = Fixtures["neat-3"]
+        val digit = listOf(WrittenDigit(0, 3, .9f, strokes = f.strokes, boxWidth = f.boxWidth, boxHeight = f.boxHeight))
+        repeat(fi.skillit.ink.AttemptInkStore.KEEP_ATTEMPTS + 5) { assertTrue(env.recordAnswer(digit, attemptKey = "attempt-$it")) }
+        val kept = ink.all()
+        assertEquals(fi.skillit.ink.AttemptInkStore.KEEP_ATTEMPTS, kept.size)
+        assertEquals("newest kept", "attempt-${fi.skillit.ink.AttemptInkStore.KEEP_ATTEMPTS + 4}", kept.last().key)
+        assertNull("oldest pruned", ink.load("attempt-0"))
+        assertTrue("pad answers store no ink", env.recordAnswer(listOf(WrittenDigit(0, 3, null)), attemptKey = "pad"))
+        assertNull(ink.load("pad"))
+    }
+
+    @Test fun metricWorkRunsOnTheComputeDispatcher() = kotlinx.coroutines.runBlocking {
+        var dispatched = 0
+        val counting = object : kotlinx.coroutines.CoroutineDispatcher() {
+            override fun isDispatchNeeded(context: kotlin.coroutines.CoroutineContext) = true
+            override fun dispatch(context: kotlin.coroutines.CoroutineContext, block: Runnable) { dispatched++; block.run() }
+        }
+        val env = CoachEnvironment(store(), null, io = kotlinx.coroutines.Dispatchers.Unconfined, compute = counting)
+        val f = Fixtures["neat-4"]
+        val pad = CoachPad().apply { strokes = f.strokes; boxWidth = f.boxWidth; boxHeight = f.boxHeight }
+        assertNotNull(env.measure(4, pad)); val afterMeasure = dispatched
+        assertTrue(afterMeasure > 0)
+        env.trace(DigitGuides.of(4), pad.unitStrokes); assertTrue(dispatched > afterMeasure)
+        val beforeAnswer = dispatched
+        env.recordAnswer(listOf(WrittenDigit(0, 4, .9f, strokes = f.strokes, boxWidth = f.boxWidth, boxHeight = f.boxHeight)))
+        assertTrue(dispatched > beforeAnswer)
+    }
+
     @Test fun answerDigitsWithInkAreMeasured() {
         val f = Fixtures["neat-4"]
         val reports = listOf(WrittenDigit(0, 4, .9f, strokes = f.strokes, boxWidth = f.boxWidth, boxHeight = f.boxHeight), WrittenDigit(1, 2, .9f)).legibility()

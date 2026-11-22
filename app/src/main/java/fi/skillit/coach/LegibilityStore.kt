@@ -195,3 +195,17 @@ object WarmUp {
         return picked.take(count)
     }
 }
+
+/**
+ * Where handwriting data lives on the device, and how to remove all of it (e.g. "Nollaa edistyminen").
+ * Both stores are in noBackupFilesDir, excluded from cloud backup and device transfer.
+ */
+object HandwritingData {
+    fun attemptInk(context: Context) = fi.skillit.ink.AttemptInkStore(File(context.applicationContext.noBackupFilesDir, "handwriting/attempts"))
+
+    /** Deletes the legibility aggregates and every stored attempt's strokes. Blocking: call off the main thread. */
+    fun deleteAll(context: Context) {
+        LegibilityStore.open(context.applicationContext).deleteAll()
+        attemptInk(context).deleteAll()
+    }
+}

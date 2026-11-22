@@ -58,7 +58,8 @@ class CoachInLessonTest {
     private val attempts = MemoryAttempts()
     private val mode = MutableStateFlow(InputMode.Pen)
     private val legibility by lazy { LegibilityStore(File(tmp.root, "legibility.v1.tsv")) }
-    private val coach by lazy { CoachEnvironment(legibility, null, TestSurface, Dispatchers.Unconfined) }
+    private val ink by lazy { fi.skillit.ink.AttemptInkStore(File(tmp.root, "attempts")) }
+    private val coach by lazy { CoachEnvironment(legibility, null, TestSurface, Dispatchers.Unconfined, Dispatchers.Unconfined, ink) }
     private val nine = Fixtures["neat-9"]
     private val pen = UnsurePen(listOf(WrittenDigit(0, 9, .4f, strokes = nine.strokes, boxWidth = nine.boxWidth, boxHeight = nine.boxHeight)))
     private fun env(withCoach: Boolean = true) = MathEnvironment({ course }, store, attempts, mode, { mode.value = it }, { pen }, clock = { 5L },
@@ -92,6 +93,10 @@ class CoachInLessonTest {
         assertEquals(feedback, compose.onAllNodes(hasText("XP", substring = true) or hasText("Harjoitellaan", substring = true)).fetchSemanticsNodes().size)
         assertEquals(1, attempts.events.size)
         assertEquals("the answer's ink was measured into the aggregates", 1, legibility.days().single { it.digit == 9 }.count)
+        // N1: the attempt's strokes are kept under its event id (and pruned on every save).
+        val saved = ink.load(attempts.events.single().eventId)!!
+        assertEquals(9, saved.cells.getValue(0).digit)
+        assertEquals(nine.strokes, saved.cells.getValue(0).strokes)
     }
 
     @Test fun theNumberPadNeverPrompts() {

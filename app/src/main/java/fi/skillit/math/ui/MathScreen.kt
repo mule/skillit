@@ -62,7 +62,7 @@ class MathEnvironment(
             val log by lazy { AttemptLog.open(app) }
             val settings = InputModeSettings(app.inkSettingsDataStore)
             val recognizer by lazy { MlKitDigitRecognizer() }
-            val coach by lazy { CoachEnvironment(LegibilityStore.open(app), recognizer) }
+            val coach by lazy { CoachEnvironment(LegibilityStore.open(app), recognizer, ink = HandwritingData.attemptInk(app)) }
             return MathEnvironment(
                 loadCourse = { withContext(Dispatchers.IO) {
                     val text = runCatching { app.assets.open(MathCourse.PACK_ASSET) }.getOrNull()
@@ -391,7 +391,8 @@ private fun LessonScreen(
                 if (coach != null) {
                     val written = input.written(exercise.id)
                     prompt = clarity.afterAnswer(written)
-                    scope.launch { coach.recordAnswer(written) }
+                    // Strokes are kept per attempt (pruned to AttemptInkStore.KEEP_ATTEMPTS); only aggregates may ever sync.
+                    scope.launch { coach.recordAnswer(written, attemptKey = event.eventId) }
                 }
             }
         }, enabled = !busy && draft.complete, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Tarkista") }

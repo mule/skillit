@@ -209,7 +209,10 @@ object Legibility {
         if (all.size < 2) return emptyList()
         val box = Bounds.of(all)
         val size = max(max(box.width, box.height), 1e-3f)
-        val step = size / 30f
+        // Bounded work: lots of ink (a digit written over and over) is resampled more coarsely, so the pairwise
+        // search stays near MAX_SEGMENTS² / 2 comparisons whatever the child wrote (review: Codex should-fix 1).
+        val inkLength = strokes.sumOf { s -> s.zipWithNext().sumOf { (a, b) -> dist(a, b).toDouble() } }.toFloat()
+        val step = max(size / 30f, inkLength / MAX_SEGMENTS)
         // Resampled path: point, stroke id and arc length along the whole path (pen lifts add nothing).
         val path = mutableListOf<UnitPoint>(); val strokeOf = mutableListOf<Int>(); val arc = mutableListOf<Float>()
         var length = 0f
@@ -259,6 +262,7 @@ object Legibility {
     }
 
     private const val MAX_GAP = 0.35f
+    internal const val MAX_SEGMENTS = 240
 
     internal fun resample(points: List<UnitPoint>, step: Float): List<UnitPoint> {
         if (points.size < 2) return points
@@ -346,15 +350,38 @@ object Trace {
         val ink = strokes.filter { it.isNotEmpty() }
         if (ink.isEmpty()) return null
         val guidePoints = guide.strokes.flatMap { Legibility.resample(it, 0.02f) }
-        val inkPoints = ink.flatMap { Legibility.resample(it, 0.02f) }
+        // Bounded work for long scribbles: at most about MAX_INK_POINTS ink samples.
+        val inkLength = ink.sumOf { s -> s.zipWithNext().sumOf { (a, b) -> Legibility.dist(a, b).toDouble() } }.toFloat()
+        val inkPoints = ink.flatMap { Legibility.resample(it, max(0.02f, inkLength / MAX_INK_POINTS)) }
         val coverage = guidePoints.count { g -> distanceToPath(g, ink) <= NEAR }.toFloat() / guidePoints.size
         val mean = inkPoints.map { distanceToPath(it, guide.strokes) }.average().toFloat()
         val first = ink.first()
         val g = guide.strokes.first()
         val startedAtDot = Legibility.dist(first.first(), g.first()) <= 0.12f
-        val rightDirection = first.size < 2 ||
-            Legibility.dist(first.first(), g.first()) <= Legibility.dist(first.last(), g.first())
+        val rightDirection = direction(first, g)
         return TraceReport(coverage, 1f - Legibility.ramp(mean, 0.03f, 0.15f), startedAtDot, rightDirection)
+    }
+
+    private const val MAX_INK_POINTS = 400f
+
+    /**
+     * Whether [ink] runs along [guide] the way the arrows point. Each ink sample is placed at its nearest spot on
+     * the guide (as a share of the guide's length); the ink goes the right way when it mostly moves forward.
+     * Jumps of more than half the guide are the wrap-around of a closed loop (a 0 starts and ends at its dot)
+     * and are ignored, so a clockwise 0 that begins and ends at the dot still counts as reversed (Codex should-fix 2).
+     */
+    internal fun direction(ink: List<UnitPoint>, guide: List<UnitPoint>): Boolean {
+        if (ink.size < 2 || guide.size < 2) return true
+        val g = Legibility.resample(guide, 0.02f)
+        val length = (g.size - 1).toFloat()
+        val progress = Legibility.resample(ink, 0.02f).map { p -> g.indices.minBy { Legibility.dist(p, g[it]) } / length }
+        var forward = 0f; var backward = 0f
+        progress.zipWithNext().forEach { (a, b) ->
+            val d = b - a
+            if (kotlin.math.abs(d) > 0.5f) return@forEach
+            if (d > 0) forward += d else backward -= d
+        }
+        return forward >= backward
     }
 
     private fun distanceToPath(p: UnitPoint, strokes: List<List<UnitPoint>>): Float =

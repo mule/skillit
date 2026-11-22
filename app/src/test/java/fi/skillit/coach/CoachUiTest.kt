@@ -75,7 +75,7 @@ class CoachUiTest {
     private var recognized = 0
     private val recognizer by lazy { FakeRecognizer { recognized++; listOf(RawCandidate("$expected", 0f), RawCandidate("x", 3f)) } }
     private var expected = 0
-    private val env by lazy { CoachEnvironment(store, recognizer, TestSurface, Dispatchers.Unconfined) }
+    private val env by lazy { CoachEnvironment(store, recognizer, TestSurface, Dispatchers.Unconfined, Dispatchers.Unconfined) }
 
     private fun event(down: Long, t: Long, action: Int, x: Float, y: Float, tool: Int): MotionEvent {
         val props = MotionEvent.PointerProperties().apply { id = 0; toolType = tool }

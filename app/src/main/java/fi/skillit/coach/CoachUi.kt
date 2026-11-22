@@ -21,6 +21,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import fi.skillit.ink.AttemptInkStore
+import fi.skillit.ink.CellInk
 import fi.skillit.ink.DigitRecognizer
 import fi.skillit.ink.DigitRules
 import fi.skillit.ink.InkBoxes
@@ -47,14 +49,33 @@ class CoachEnvironment(
     val recognizer: DigitRecognizer?,
     val surface: CoachSurface = InkSurface,
     private val io: CoroutineDispatcher = Dispatchers.IO,
+    /** Metric work (closure search, trace matching) never runs on the main thread (review: Codex should-fix 1). */
+    private val compute: CoroutineDispatcher = Dispatchers.Default,
+    /** Raw strokes per answer attempt (#26), app-private, pruned to [AttemptInkStore.KEEP_ATTEMPTS]. Null = not kept. */
+    val ink: AttemptInkStore? = null,
 ) {
     /** Adds reports to the aggregates. False when the disk refused; the child's play is never interrupted. */
     suspend fun record(reports: List<LegibilityReport>): Boolean = try {
         withContext(io) { store?.record(reports) }; true
     } catch (e: CancellationException) { throw e } catch (_: Exception) { false }
 
-    /** Measures and records the inked digits of one answer (see [writtenDigits]). Never affects XP. */
-    suspend fun recordAnswer(digits: List<WrittenDigit>): Boolean = record(digits.legibility())
+    /**
+     * Measures and records the inked digits of one answer (see [writtenDigits]), and keeps the answer's strokes
+     * under [attemptKey] in [ink], pruned to the newest [AttemptInkStore.KEEP_ATTEMPTS] attempts. Never affects XP.
+     */
+    suspend fun recordAnswer(digits: List<WrittenDigit>, attemptKey: String? = null): Boolean {
+        val reports = withContext(compute) { digits.legibility() }
+        val kept = if (attemptKey == null || ink == null) true else try {
+            withContext(io) {
+                val cells = digits.filter { it.strokes.isNotEmpty() }.associate { it.cell to CellInk(it.strokes, it.digit) }
+                if (cells.isNotEmpty()) { ink.save(attemptKey, cells); ink.prune(AttemptInkStore.KEEP_ATTEMPTS) }
+            }; true
+        } catch (e: CancellationException) { throw e } catch (_: Exception) { false }
+        return record(reports) && kept
+    }
+
+    /** Trace accuracy against [guide], off the main thread. */
+    suspend fun trace(guide: DigitGuide, strokes: List<List<UnitPoint>>): TraceReport? = withContext(compute) { Trace.score(guide, strokes) }
 
     suspend fun days(): List<DigitDay> = try { withContext(io) { store?.days().orEmpty() } }
         catch (e: CancellationException) { throw e } catch (_: Exception) { emptyList() }
@@ -70,13 +91,17 @@ class CoachEnvironment(
     }
 
     suspend fun measure(digit: Int, pad: CoachPad): LegibilityReport? {
-        if (pad.strokes.isEmpty() || pad.boxWidth <= 0f) return null
-        return Legibility.measure(digit, pad.strokes, pad.boxWidth, pad.boxHeight, confidence(digit, pad.strokes, pad.boxWidth, pad.boxHeight))
+        // Snapshot the Compose state on the main thread; measure the snapshot in the background.
+        val strokes = pad.strokes; val w = pad.boxWidth; val h = pad.boxHeight
+        if (strokes.isEmpty() || w <= 0f) return null
+        val confidence = confidence(digit, strokes, w, h)
+        return withContext(compute) { Legibility.measure(digit, strokes, w, h, confidence) }
     }
 
     companion object {
-        fun android(context: Context, recognizer: DigitRecognizer? = null) =
-            CoachEnvironment(LegibilityStore.open(context.applicationContext), recognizer ?: MlKitDigitRecognizer())
+        fun android(context: Context, recognizer: DigitRecognizer? = null) = CoachEnvironment(
+            LegibilityStore.open(context.applicationContext), recognizer ?: MlKitDigitRecognizer(), ink = HandwritingData.attemptInk(context),
+        )
     }
 }
 
@@ -265,7 +290,7 @@ fun DigitStudio(env: CoachEnvironment, onBack: () -> Unit) {
         checking = true
         scope.launch {
             try {
-                if (step == StudioStep.TRACE) trace = Trace.score(DigitGuides.of(digit), pad.unitStrokes)
+                if (step == StudioStep.TRACE) trace = env.trace(DigitGuides.of(digit), pad.unitStrokes)
                 val r = env.measure(digit, pad)
                 report = r
                 if (record && r != null) env.record(listOf(r))
