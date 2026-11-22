@@ -1,0 +1,599 @@
+{
+    "schema": 1,
+    "id": "mathgen-sample",
+    "subject": "math",
+    "grade": 4,
+    "version": 1,
+    "title": "Kertolaskua – generoitu esimerkkipaketti",
+    "language": "fi",
+    "units": [
+        {
+            "id": "chapter-2",
+            "title": "Kertolaskua",
+            "exercises": [
+                {
+                    "id": "tables-0-44136fa355b3",
+                    "prompt": "Täydennä 8:n kertotaulun lukujono.",
+                    "hint": "Lisää aina 8 edelliseen tuloon.",
+                    "explanation": "Oikeat vastaukset saat laskemalla vihjeen mukaan.",
+                    "answer": {
+                        "type": "fill-table",
+                        "rows": [
+                            [
+                                {
+                                    "type": "given",
+                                    "text": "8 · 5"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "8 · 6"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "8 · 7"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "8 · 8"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "8 · 9"
+                                }
+                            ],
+                            [
+                                {
+                                    "type": "blank",
+                                    "id": "b5",
+                                    "expected": 40,
+                                    "expression": "8 * 5"
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "b6",
+                                    "expected": 48,
+                                    "expression": "8 * 6"
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "b7",
+                                    "expected": 56,
+                                    "expression": "8 * 7"
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "b8",
+                                    "expected": 64,
+                                    "expression": "8 * 8"
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "b9",
+                                    "expected": 72,
+                                    "expression": "8 * 9"
+                                }
+                            ]
+                        ]
+                    },
+                    "generator": {
+                        "family": "tables",
+                        "params": {},
+                        "seed": 0
+                    }
+                },
+                {
+                    "id": "tens-hundreds-1-44136fa355b3",
+                    "prompt": "Laske 7 · 20.",
+                    "hint": "Kerro luvut.",
+                    "explanation": "Oikeat vastaukset saat laskemalla vihjeen mukaan.",
+                    "answer": {
+                        "type": "numeric",
+                        "expected": 140
+                    },
+                    "expression": "7 * 20",
+                    "generator": {
+                        "family": "tens-hundreds",
+                        "params": {},
+                        "seed": 1
+                    }
+                },
+                {
+                    "id": "multi-factor-2-44136fa355b3",
+                    "prompt": "Laske 7 · 5 · 2. Valitse helppo laskujärjestys.",
+                    "hint": "Kerro ensin 2 ja 5.",
+                    "explanation": "Oikeat vastaukset saat laskemalla vihjeen mukaan.",
+                    "answer": {
+                        "type": "numeric",
+                        "expected": 70
+                    },
+                    "expression": "7 * 5 * 2",
+                    "generator": {
+                        "family": "multi-factor",
+                        "params": {},
+                        "seed": 2
+                    }
+                },
+                {
+                    "id": "column-3-44136fa355b3",
+                    "prompt": "Laske allekkain 290 · 3.",
+                    "hint": "Aloita ykkösistä ja merkitse muistinumerot.",
+                    "explanation": "Oikeat vastaukset saat laskemalla vihjeen mukaan.",
+                    "answer": {
+                        "type": "column-multiplication",
+                        "factors": [
+                            290,
+                            3
+                        ],
+                        "cells": [
+                            {
+                                "id": "r0",
+                                "kind": "result",
+                                "row": 0,
+                                "column": 0,
+                                "expected": 0,
+                                "required": true
+                            },
+                            {
+                                "id": "r1",
+                                "kind": "result",
+                                "row": 0,
+                                "column": 1,
+                                "expected": 7,
+                                "required": true
+                            },
+                            {
+                                "id": "c0.2",
+                                "kind": "carry",
+                                "row": 0,
+                                "column": 2,
+                                "expected": 2,
+                                "required": false
+                            },
+                            {
+                                "id": "r2",
+                                "kind": "result",
+                                "row": 0,
+                                "column": 2,
+                                "expected": 8,
+                                "required": true
+                            }
+                        ]
+                    },
+                    "expression": "290 * 3",
+                    "generator": {
+                        "family": "column",
+                        "params": {},
+                        "seed": 3
+                    }
+                },
+                {
+                    "id": "column-tens-4-44136fa355b3",
+                    "prompt": "Laske allekkain 271 · 30.",
+                    "hint": "Aloita ykkösistä ja merkitse muistinumerot.",
+                    "explanation": "Oikeat vastaukset saat laskemalla vihjeen mukaan.",
+                    "answer": {
+                        "type": "column-multiplication",
+                        "factors": [
+                            271,
+                            30
+                        ],
+                        "cells": [
+                            {
+                                "id": "p0.0",
+                                "kind": "partial",
+                                "row": 0,
+                                "column": 0,
+                                "expected": 0,
+                                "required": true
+                            },
+                            {
+                                "id": "p1.1",
+                                "kind": "partial",
+                                "row": 1,
+                                "column": 1,
+                                "expected": 3,
+                                "required": true
+                            },
+                            {
+                                "id": "p1.2",
+                                "kind": "partial",
+                                "row": 1,
+                                "column": 2,
+                                "expected": 1,
+                                "required": true
+                            },
+                            {
+                                "id": "c1.3",
+                                "kind": "carry",
+                                "row": 1,
+                                "column": 3,
+                                "expected": 2,
+                                "required": false
+                            },
+                            {
+                                "id": "p1.3",
+                                "kind": "partial",
+                                "row": 1,
+                                "column": 3,
+                                "expected": 8,
+                                "required": true
+                            },
+                            {
+                                "id": "r0",
+                                "kind": "result",
+                                "row": 0,
+                                "column": 0,
+                                "expected": 0,
+                                "required": true
+                            },
+                            {
+                                "id": "r1",
+                                "kind": "result",
+                                "row": 0,
+                                "column": 1,
+                                "expected": 3,
+                                "required": true
+                            },
+                            {
+                                "id": "r2",
+                                "kind": "result",
+                                "row": 0,
+                                "column": 2,
+                                "expected": 1,
+                                "required": true
+                            },
+                            {
+                                "id": "r3",
+                                "kind": "result",
+                                "row": 0,
+                                "column": 3,
+                                "expected": 8,
+                                "required": true
+                            }
+                        ]
+                    },
+                    "expression": "271 * 30",
+                    "generator": {
+                        "family": "column-tens",
+                        "params": {},
+                        "seed": 4
+                    }
+                },
+                {
+                    "id": "order-of-ops-5-44136fa355b3",
+                    "prompt": "Laske vaiheittain 9 + 7 * (3 + 6).",
+                    "hint": "Laske ensin sulut, sitten kertolaskut ja lopuksi yhteenlaskut.",
+                    "explanation": "Oikeat vastaukset saat laskemalla vihjeen mukaan.",
+                    "answer": {
+                        "type": "steps",
+                        "values": [
+                            9,
+                            63,
+                            72
+                        ],
+                        "labels": []
+                    },
+                    "expression": "9 + 7 * (3 + 6)",
+                    "generator": {
+                        "family": "order-of-ops",
+                        "params": {},
+                        "seed": 5
+                    }
+                },
+                {
+                    "id": "missing-factor-6-44136fa355b3",
+                    "prompt": "Mikä luku puuttuu? 7 · ☐ = 28",
+                    "hint": "Jaa tulo tunnettujen tekijöiden tulolla.",
+                    "explanation": "Oikeat vastaukset saat laskemalla vihjeen mukaan.",
+                    "answer": {
+                        "type": "missing-factor",
+                        "factors": [
+                            7,
+                            null
+                        ],
+                        "product": 28
+                    },
+                    "expression": "7 * 4",
+                    "generator": {
+                        "family": "missing-factor",
+                        "params": {},
+                        "seed": 6
+                    }
+                },
+                {
+                    "id": "product-grid-7-44136fa355b3",
+                    "prompt": "Täydennä kertolaskuruudukko.",
+                    "hint": "Kerro rivin alussa oleva luku sarakkeen yläpuolella olevalla luvulla.",
+                    "explanation": "Oikeat vastaukset saat laskemalla vihjeen mukaan.",
+                    "answer": {
+                        "type": "fill-table",
+                        "rows": [
+                            [
+                                {
+                                    "type": "given",
+                                    "text": "·"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "7"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "4"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "9"
+                                }
+                            ],
+                            [
+                                {
+                                    "type": "given",
+                                    "text": "10"
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "b0-0",
+                                    "expected": 70,
+                                    "expression": "10 * 7"
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "b0-1",
+                                    "expected": 40,
+                                    "expression": "10 * 4"
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "b0-2",
+                                    "expected": 90,
+                                    "expression": "10 * 9"
+                                }
+                            ],
+                            [
+                                {
+                                    "type": "given",
+                                    "text": "4"
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "b1-0",
+                                    "expected": 28,
+                                    "expression": "4 * 7"
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "b1-1",
+                                    "expected": 16,
+                                    "expression": "4 * 4"
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "b1-2",
+                                    "expected": 36,
+                                    "expression": "4 * 9"
+                                }
+                            ],
+                            [
+                                {
+                                    "type": "given",
+                                    "text": "5"
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "b2-0",
+                                    "expected": 35,
+                                    "expression": "5 * 7"
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "b2-1",
+                                    "expected": 20,
+                                    "expression": "5 * 4"
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "b2-2",
+                                    "expected": 45,
+                                    "expression": "5 * 9"
+                                }
+                            ]
+                        ]
+                    },
+                    "generator": {
+                        "family": "product-grid",
+                        "params": {},
+                        "seed": 7
+                    }
+                },
+                {
+                    "id": "multiples-of-8-44136fa355b3",
+                    "prompt": "Mihin kertotauluihin luku 21 kuuluu? Merkitse 1 jos kuuluu, muuten 0.",
+                    "hint": "Käytä kunkin kertotaulun kertoimia 1–10.",
+                    "explanation": "Oikeat vastaukset saat laskemalla vihjeen mukaan.",
+                    "answer": {
+                        "type": "fill-table",
+                        "rows": [
+                            [
+                                {
+                                    "type": "given",
+                                    "text": "2:n kertotaulu"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "3:n kertotaulu"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "4:n kertotaulu"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "5:n kertotaulu"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "6:n kertotaulu"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "7:n kertotaulu"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "8:n kertotaulu"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "9:n kertotaulu"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "10:n kertotaulu"
+                                }
+                            ],
+                            [
+                                {
+                                    "type": "blank",
+                                    "id": "t2",
+                                    "expected": 0
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "t3",
+                                    "expected": 1
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "t4",
+                                    "expected": 0
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "t5",
+                                    "expected": 0
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "t6",
+                                    "expected": 0
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "t7",
+                                    "expected": 1
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "t8",
+                                    "expected": 0
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "t9",
+                                    "expected": 0
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "t10",
+                                    "expected": 0
+                                }
+                            ]
+                        ]
+                    },
+                    "generator": {
+                        "family": "multiples-of",
+                        "params": {},
+                        "seed": 8
+                    }
+                },
+                {
+                    "id": "word-9-44136fa355b3",
+                    "prompt": "Yksi peli maksaa 8 euroa. Kuinka paljon 4 peliä maksaa?",
+                    "hint": "Kerro luvut.",
+                    "explanation": "Oikeat vastaukset saat laskemalla vihjeen mukaan.",
+                    "answer": {
+                        "type": "numeric",
+                        "expected": 32
+                    },
+                    "expression": "4 * 8",
+                    "generator": {
+                        "family": "word",
+                        "params": {},
+                        "seed": 9
+                    }
+                },
+                {
+                    "id": "letter-code-a-44136fa355b3",
+                    "prompt": "Ratkaise laskut ja muodosta sana: 32=S, 56=A, 16=U, 48=N",
+                    "hint": "Vaihda jokainen laskettu tulo sitä vastaavaksi kirjaimeksi.",
+                    "explanation": "Oikeat vastaukset saat laskemalla vihjeen mukaan.",
+                    "answer": {
+                        "type": "fill-table",
+                        "rows": [
+                            [
+                                {
+                                    "type": "given",
+                                    "text": "4 · 8"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "7 · 8"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "2 · 8"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "6 · 8"
+                                },
+                                {
+                                    "type": "given",
+                                    "text": "7 · 8"
+                                }
+                            ],
+                            [
+                                {
+                                    "type": "blank",
+                                    "id": "l0",
+                                    "expected": 32,
+                                    "expression": "4 * 8"
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "l1",
+                                    "expected": 56,
+                                    "expression": "7 * 8"
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "l2",
+                                    "expected": 16,
+                                    "expression": "2 * 8"
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "l3",
+                                    "expected": 48,
+                                    "expression": "6 * 8"
+                                },
+                                {
+                                    "type": "blank",
+                                    "id": "l4",
+                                    "expected": 56,
+                                    "expression": "7 * 8"
+                                }
+                            ]
+                        ]
+                    },
+                    "generator": {
+                        "family": "letter-code",
+                        "params": {},
+                        "seed": 10
+                    }
+                }
+            ]
+        }
+    ]
+}

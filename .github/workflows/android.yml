@@ -55,9 +55,9 @@ jobs:
         with:
           packages: platform-tools platforms;android-35 build-tools;35.0.0
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew :engine:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+      - run: ./gradlew :engine:test :mathgen:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --max-workers=2
       - name: Release privacy check (manifest allowlist, no telemetry backend, no network imports)
-        run: ./gradlew :app:processReleaseManifest && python3 scripts/check-release-privacy.py
+        run: ./gradlew :app:processReleaseManifest --max-workers=2 && python3 scripts/check-release-privacy.py
       - uses: actions/upload-artifact@v4
         with:
           name: skillit-debug-apk
@@ -82,4 +82,5 @@ jobs:
           name: test-reports
           path: |
             engine/build/reports/tests/
+            mathgen/build/reports/tests/
             app/build/reports/
