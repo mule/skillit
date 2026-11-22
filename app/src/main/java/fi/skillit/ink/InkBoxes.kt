@@ -5,6 +5,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -31,9 +35,30 @@ class InkBoxesController {
 }
 
 @Composable
-fun InkBoxes(boxCount: Int, controller: InkBoxesController, modifier: Modifier = Modifier, boxSize: Dp = 120.dp, onInk: (List<InkStroke>) -> Unit = {}) {
+fun InkBoxes(
+    boxCount: Int, controller: InkBoxesController, modifier: Modifier = Modifier, boxSize: Dp = 120.dp,
+    lowLatency: Boolean = !isEmulator(), initial: List<InkStroke> = emptyList(), onInk: (List<InkStroke>) -> Unit = {},
+) {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle, controller) {
+        // Release the front-buffered layer before the window can be hidden; re-create it on resume.
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> controller.view?.pauseInk()
+                Lifecycle.Event.ON_RESUME -> controller.view?.resumeInk()
+                else -> {}
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer); controller.view?.pauseInk() }
+    }
     AndroidView(
-        factory = { DigitInkView(it, boxCount).also { v -> controller.view = v } },
+        factory = { DigitInkView(it, boxCount, lowLatency).also { v ->
+            controller.view = v
+            // Put back ink kept by the caller (e.g. after a pen → number pad → pen switch). onInk isn't wired yet.
+            if (initial.isNotEmpty()) v.restore(initial)
+            if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) v.pauseInk()
+        } },
         update = { it.boxCount = boxCount; it.onInkChanged = onInk; controller.view = it },
         onRelease = { if (controller.view === it) controller.view = null },
         modifier = modifier.testTag("ink-boxes").width(boxSize * boxCount).height(boxSize),

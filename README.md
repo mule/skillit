@@ -50,6 +50,13 @@ digits 0–9. When two digits are close (stricter for 4/9 and 1/7), the game ask
 - If the model is missing and the tablet is offline, the screen says so and offers a retry. The
   parent-unlocked number pad (#27) is the fallback.
 
+**Cells for the math screens (#27).** `DigitInkRow`/`DigitInkCell` with `DigitRowState` give one digit per
+box (`CellKind.Carry` for the small carry row). The same state works with the pen or the number pad
+(`InputMode`, stored by `InputModeSettings` in its own DataStore; the switch belongs in the PIN-protected
+parent area). `AttemptInkStore` keeps each attempt's strokes in app-private files for the handwriting coach
+(#28); they are excluded from backup and transfer and never uploaded. The front-buffered ink layer is
+released on pause and re-created on resume, so a hidden window never draws it.
+
 **Ink lab (debug builds only).** A second launcher icon, “Ink lab”, lets you try the boxes, record
 labelled samples (each digit ten times) and see per-digit accuracy and the 4/9 and 1/7 mix-ups.
 Release builds don't contain it. Samples stay on the tablet; on a debug build a developer can read

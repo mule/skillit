@@ -21,9 +21,9 @@ import androidx.ink.strokes.Stroke
  * A row of one-digit boxes the child writes into.
  *
  * Live strokes go through androidx.ink's [InProgressStrokesView] (front-buffered, low latency) when
- * [lowLatency] is on. Emulators turn it off: their software renderer crashes hwui's RenderThread when a
- * front-buffered layer is torn down mid-frame (seen on the API 35 CI emulator), so there the live stroke is
- * drawn on the normal Canvas instead. Finished strokes are drawn here with [CanvasStrokeRenderer]. In parallel the view records its own
+ * [lowLatency] is on. Emulators turn it off: on the API 35 CI emulator graphics-core's front buffer crashes
+ * hwui's RenderThread (SIGSEGV in DrawFrameTask) as soon as the layer is created, so there the live stroke is
+ * drawn on the normal Canvas instead. On devices the layer is also released on pause (see [pauseInk]). Finished strokes are drawn here with [CanvasStrokeRenderer]. In parallel the view records its own
  * [InkStroke] points from the same MotionEvents: those feed recognition and local storage and do not
  * depend on ink's asynchronous finish callback.
  */
@@ -41,7 +41,17 @@ class DigitInkView(context: Context, boxCount: Int, lowLatency: Boolean = !isEmu
     private fun changed() { revision++; onInkChanged(strokes) }
 
     val policy = PenPolicy()
-    private val live: InProgressStrokesView? = if (lowLatency) InProgressStrokesView(context) else null
+    /** Whether this view uses the front-buffered layer at all (false on emulators). */
+    val lowLatency = lowLatency
+    /**
+     * The front-buffered layer. It exists only while the screen is resumed and visible: [pauseInk] detaches it
+     * so hwui never draws a front buffer for a hidden window (the CI RenderThread SIGSEGV), [resumeInk] adds a
+     * fresh one.
+     */
+    private var live: InProgressStrokesView? = null
+    /** For tests: whether the front-buffered layer is attached right now. */
+    val hasLiveLayer: Boolean get() = live != null
+    private var paused = false
     private val renderer = CanvasStrokeRenderer.create()
     private val identity = Matrix()
     private val brush = Brush.createWithColorIntArgb(StockBrushes.pressurePen(), Color.rgb(0x16, 0x29, 0x27), 9f * resources.displayMetrics.density / 2f, 0.1f)
@@ -72,11 +82,47 @@ class DigitInkView(context: Context, boxCount: Int, lowLatency: Boolean = !isEmu
 
     init {
         setWillNotDraw(false)
-        live?.let {
+        attachLiveLayer()
+        contentDescription = "Kirjoitusruudukko"
+    }
+
+    private fun attachLiveLayer() {
+        if (!lowLatency || live != null || paused) return
+        live = InProgressStrokesView(context).also {
             addView(it, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
             it.addFinishedStrokesListener(this)
         }
-        contentDescription = "Kirjoitusruudukko"
+    }
+
+    /** Drops the stroke being written (its MOVE/UP never arrive reliably across a pause). Finished ink stays. */
+    private fun cancelActive() {
+        live?.cancelUnfinishedStrokes()
+        activePointer = -1; activeId = null; writing = false; activePoints = mutableListOf(); erasing = false
+    }
+
+    /**
+     * Call on ON_PAUSE (Compose: [InkBoxes] does it from the lifecycle). Cancels the unfinished stroke and
+     * removes the front-buffered layer before the window is hidden. Strokes ink had not handed back yet are
+     * drawn by this view's Canvas fallback, so nothing finished is lost.
+     */
+    fun pauseInk() {
+        paused = true
+        cancelActive()
+        live?.let { it.clearFinishedStrokesListeners(); removeView(it) }
+        live = null
+        pending.clear()
+        invalidate()
+    }
+
+    /** Call on ON_RESUME: re-creates the front-buffered layer. */
+    fun resumeInk() { paused = false; attachLiveLayer(); invalidate() }
+
+    override fun onWindowVisibilityChanged(visibility: Int) {
+        super.onWindowVisibilityChanged(visibility)
+        // Backup for hosts that don't forward lifecycle events. Views must not be removed during this dispatch,
+        // so only cancel the stroke and hide the layer here; the detach happens in pauseInk() (ON_PAUSE).
+        if (visibility != VISIBLE) { cancelActive(); live?.visibility = INVISIBLE }
+        else live?.visibility = VISIBLE
     }
 
     fun clear() {

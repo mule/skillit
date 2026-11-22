@@ -15,8 +15,13 @@ object InkSampleCodec {
     fun encode(s: InkSample): String = listOf(
         "v1", s.label.toString(), esc(s.model),
         s.candidates.joinToString(",") { esc(it.text) + ":" + (it.score?.toString() ?: "") },
-        s.strokes.joinToString(";") { st -> st.points.joinToString(",") { "${it.x} ${it.y} ${it.t} ${it.pressure}" } },
+        encodeStrokes(s.strokes),
     ).joinToString("\t")
+
+    fun encodeStrokes(strokes: List<InkStroke>) = strokes.joinToString(";") { st -> st.points.joinToString(",") { "${it.x} ${it.y} ${it.t} ${it.pressure}" } }
+    fun decodeStrokes(text: String): List<InkStroke> = if (text.isEmpty()) emptyList() else text.split(";").map { st ->
+        InkStroke(st.split(",").map { p -> p.split(" ").let { InkPoint(it[0].toFloat(), it[1].toFloat(), it[2].toLong(), it[3].toFloat()) } })
+    }
 
     fun decode(line: String): InkSample? = runCatching {
         val f = line.split("\t")
@@ -25,9 +30,7 @@ object InkSampleCodec {
             val i = it.lastIndexOf(':')
             RawCandidate(unesc(it.substring(0, i)), it.substring(i + 1).takeIf(String::isNotEmpty)?.toFloat())
         }
-        val strokes = if (f[4].isEmpty()) emptyList() else f[4].split(";").map { st ->
-            InkStroke(st.split(",").map { p -> p.split(" ").let { InkPoint(it[0].toFloat(), it[1].toFloat(), it[2].toLong(), it[3].toFloat()) } })
-        }
+        val strokes = decodeStrokes(f[4])
         InkSample(f[1].toInt().also { require(it in 0..9) }, strokes, candidates, unesc(f[2]))
     }.getOrNull()
 
