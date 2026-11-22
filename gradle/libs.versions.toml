@@ -18,6 +18,7 @@ ink-rendering = { module = "androidx.ink:ink-rendering", version.ref = "ink" }
 ink-strokes = { module = "androidx.ink:ink-strokes", version.ref = "ink" }
 mlkit-digital-ink = { module = "com.google.mlkit:digital-ink-recognition", version = "18.1.0" }
 junit = { module = "junit:junit", version = "4.13.2" }
+robolectric = { module = "org.robolectric:robolectric", version = "4.16.1" }
 androidx-test-runner = { module = "androidx.test:runner", version = "1.6.2" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.8.1" }
 json-schema-validator = { module = "com.networknt:json-schema-validator", version = "1.5.6" }
