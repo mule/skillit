@@ -17,6 +17,8 @@ android {
     buildFeatures { compose = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_21; targetCompatibility = JavaVersion.VERSION_21 }
     kotlinOptions { jvmTarget = "21" }
+    // Compose UI tests of the math boards run on the JVM (Robolectric), so CI and workers need no emulator.
+    testOptions { unitTests.isIncludeAndroidResources = true }
 }
 dependencies {
     implementation(project(":engine"))
@@ -33,6 +35,9 @@ dependencies {
     implementation(libs.mlkit.digital.ink)
     debugImplementation(libs.compose.tooling)
     testImplementation(libs.junit)
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.test)
+    testImplementation(libs.robolectric)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.test)
     androidTestImplementation(libs.androidx.test.runner)
