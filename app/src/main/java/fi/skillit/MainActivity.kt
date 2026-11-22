@@ -155,7 +155,7 @@ fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null, math: 
                     nature -> NatureScreen(onQuestionChanged = { scope.launch { scroll.scrollTo(0) } }) {
                         nature = false; inGame = false
                     }
-                    mathOpen -> MathScreen(mathEnv) { mathOpen = false; inGame = false }
+                    mathOpen -> MathScreen(mathEnv, onScreenChanged = { scope.launch { scroll.scrollTo(0) } }) { mathOpen = false; inGame = false }
                     rhythm -> RhythmScreen(audio, settings || confirmReset) { rhythm = false; inGame = false }
                     !saved.started || !inGame -> {
                         Text("Nuottiseikkailu", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.semantics { heading() })

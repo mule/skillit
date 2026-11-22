@@ -44,7 +44,7 @@ class MathCourseTest {
         val p = MathProgress("math-ch2-fixture", 1, 135, mapOf("lesson-14" to LessonRecord(2, 120, "KISSA")),
             ActiveLesson(MathCourse.Plan("lesson-18", listOf("a", "b"), "Monipuolista harjoittelua."),
                 listOf(SessionEvent(Action.HINT, "a:0"), SessionEvent(Action.ANSWER, "a:0", "{\"type\":\"cells\",\"values\":{\"answer\":5}}"))),
-            MathInputMode.PAD, ParentPin.create("1234"), "Harjoitellaan lisää: muistinumeroita.")
+            ParentPin.create("1234"), "Harjoitellaan lisää: muistinumeroita.")
         assertEquals(p, MathProgressCodec.decode(MathProgressCodec.encode(p)))
         assertEquals(MathProgress(), MathProgressCodec.decode(MathProgressCodec.encode(MathProgress())))
     }

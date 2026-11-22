@@ -38,6 +38,26 @@ class MemoryStore(var progress: MathProgress = MathProgress()) : MathStore {
     override suspend fun load() = progress
     override suspend fun save(progress: MathProgress) { this.progress = progress }
 }
+/** Stands in for the S Pen: a tap "writes" [reading]; the board's confirm prompt answers through [confirm]. */
+class FakePen(var reading: CellValue = CellValue(null, null, 4 to 9)) : DigitInput {
+    override val method = InputMethod.PEN
+    val confirmed = mutableListOf<Int>()
+    @androidx.compose.runtime.Composable
+    override fun Cell(item: String, cell: InputCell, value: CellValue, focused: Boolean, mark: CellMark, enabled: Boolean,
+                      onFocus: () -> Unit, onValue: (CellValue) -> Unit, modifier: Modifier) {
+        androidx.compose.material3.TextButton(onClick = { onValue(reading) }, modifier = modifier) {
+            androidx.compose.material3.Text("Kynäruutu ${cell.label}: ${value.text}")
+        }
+    }
+    override fun confirm(item: String, cell: InputCell, value: CellValue, digit: Int): CellValue {
+        confirmed += digit
+        return CellValue(digit, .55)
+    }
+    @androidx.compose.runtime.Composable
+    override fun Controls(focused: InputCell?, value: CellValue?, enabled: Boolean, onValue: (CellValue) -> Unit, onNext: () -> Unit) {
+        androidx.compose.material3.Text("Kynä käytössä")
+    }
+}
 class MemoryAttempts : AttemptSink {
     val events = mutableListOf<AttemptEvent>()
     override suspend fun read() = events.toList()
@@ -62,7 +82,10 @@ class MathScreenTest {
     private val store = MemoryStore()
     private val attempts = MemoryAttempts()
     private var now = 1_000_000L
-    private val env = MathEnvironment({ course }, store, attempts, clock = { now })
+    private val mode = kotlinx.coroutines.flow.MutableStateFlow(fi.skillit.ink.InputMode.Pen)
+    private val pen = FakePen()
+    private val env = MathEnvironment({ course }, store, attempts, mode, { mode.value = it }, { pen }, clock = { now })
+    private fun padUnlocked() { mode.value = fi.skillit.ink.InputMode.NumberPad }
 
     private fun show() = compose.setContent { MaterialTheme { Column(Modifier.verticalScroll(rememberScrollState())) { MathScreen(env) {} } } }
     private fun tap(text: String) = compose.onNodeWithText(text).performScrollTo().performClick()
@@ -95,27 +118,39 @@ class MathScreenTest {
         compose.waitUntil(5_000) { store.progress.pin!!.failures == 1 }
         compose.onNodeWithText("Väärä koodi.").assertExists()
         pin("2468")
-        compose.waitUntil(5_000) { compose.onAllNodesWithText("Numeronäppäimistö").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("Numeronäppäimet").fetchSemanticsNodes().isNotEmpty() }
         assertEquals(0, store.progress.pin!!.failures)
-        assertEquals(MathInputMode.PEN, store.progress.input)
-        compose.onNodeWithContentDescription("Numeronäppäimistö käytössä").performClick()
-        compose.waitUntil(5_000) { store.progress.input == MathInputMode.PAD }
+        assertEquals(fi.skillit.ink.InputMode.Pen, mode.value)
+        compose.onNodeWithText("Numeronäppäimet").performClick()
+        compose.waitUntil(5_000) { mode.value == fi.skillit.ink.InputMode.NumberPad }
         tap("Sulje vanhempien alue")
         compose.onNodeWithText("Kertolaskuseikkailu").assertExists()
     }
 
-    @Test fun penIsTheDefaultAndUntilItIsPluggedInTheChildCannotTypeWithThePad() {
+    @Test fun penIsTheDefaultAndAnUnsureReadingIsConfirmedBeforeChecking() {
         store.progress = MathProgress(pin = ParentPin.create("2468"))
         show()
         tap("Aloita: Oppitunti 18")
         compose.waitUntil(5_000) { store.progress.active != null }
-        compose.onNodeWithText("Kynällä kirjoittaminen tulee tähän pian", substring = true).assertExists()
+        compose.onNodeWithText("Kynä käytössä").assertExists()
         compose.onAllNodesWithContentDescription("Numero 1").assertCountEquals(0)
         compose.onNodeWithText("Tarkista").assertIsNotEnabled()
+        compose.onNodeWithText("Kynäruutu Tulos", substring = true).performScrollTo().performClick()
+        compose.onNodeWithText("Tarkoititko 4 vai 9?").assertExists()
+        compose.onNodeWithText("Tarkista").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("Valitse 9").performScrollTo().performClick()
+        assertEquals(listOf(9), pen.confirmed)
+        tap("Tarkista")
+        compose.waitUntil(5_000) { attempts.events.size == 1 }
+        val event = attempts.events.single()
+        assertEquals(InputMethod.PEN, event.inputMethod)
+        assertEquals(.55, event.recognizerConfidence!!, 1e-9)
+        assertEquals(mapOf("answer" to 9), (event.answer as fi.skillit.engine.AnswerInput.Cells).values)
     }
 
     @Test fun aPadLessonLogsAttemptsAwardsMathXpAndRevealsTheRewardWord() {
-        store.progress = MathProgress(pin = ParentPin.create("2468"), input = MathInputMode.PAD)
+        store.progress = MathProgress(pin = ParentPin.create("2468"))
+        padUnlocked()
         show()
         tap("Aloita: Oppitunti 18")
         compose.waitUntil(5_000) { store.progress.active != null }
@@ -190,7 +225,8 @@ class MathScreenTest {
     }
 
     @Test fun resumingKeepsTheSessionAndSwitchingLessonsAsksFirst() {
-        store.progress = MathProgress(pin = ParentPin.create("2468"), input = MathInputMode.PAD)
+        store.progress = MathProgress(pin = ParentPin.create("2468"))
+        padUnlocked()
         show()
         tap("Aloita: Oppitunti 18")
         compose.waitUntil(5_000) { store.progress.active != null }
@@ -223,7 +259,8 @@ class MathNavigationTest {
         val before = SavedProgress(started = true, events = session.events, volume = .4f)
         runBlocking { music.save(before) }
         val store = MemoryStore()
-        val env = MathEnvironment({ MathCourse(fi.skillit.math.MathFixture.build()) }, store, MemoryAttempts())
+        val env = MathEnvironment({ MathCourse(fi.skillit.math.MathFixture.build()) }, store, MemoryAttempts(),
+            kotlinx.coroutines.flow.flowOf(fi.skillit.ink.InputMode.Pen), {}, { FakePen() })
         compose.setContent { MaterialTheme { SkillitApp(music, Silent, env) } }
         compose.waitUntil(5_000) { compose.onAllNodesWithText("Etusivu").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Etusivu").performScrollTo().performClick()
@@ -232,6 +269,13 @@ class MathNavigationTest {
         "13571357".forEach { compose.onNodeWithContentDescription("PIN $it").performScrollTo().performClick() }
         compose.waitUntil(5_000) { compose.onAllNodesWithText("Aloita: Oppitunti 14").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Matematiikan pisteet: 0 XP", substring = true).assertExists()
+        // Opening a lesson low on the map starts the lesson at the top: no performScrollTo on the check.
+        compose.onNodeWithText("Aloita: Kappaleen koe").performScrollTo().performClick()
+        compose.waitUntil(5_000) { store.progress.active != null }
+        compose.onNodeWithText("Kappaleen koe", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithText("Kartalle").performScrollTo().performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("Kertolaskuseikkailu").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Kertolaskuseikkailu").assertIsDisplayed()
         compose.onNodeWithText("Etusivu").performScrollTo().performClick()
         compose.waitUntil(5_000) { compose.onAllNodesWithText("Nuottiseikkailu").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Seikkailun pisteet: 10 XP", substring = true).assertExists()

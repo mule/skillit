@@ -29,7 +29,7 @@ data class InputCell(val id: String, val label: String, val maxDigits: Int, val 
  * digits ([ask]): the board then asks "Tarkoititko 4 vai 9?" and never checks the answer until the
  * child picks one. The pad always gives a sure value with null confidence.
  */
-data class CellValue(val value: Int? = null, val confidence: Double? = null, val ask: Pair<Int, Int>? = null) {
+data class CellValue(val value: Int? = null, val confidence: Double? = null, val ask: Pair<Int, Int>? = null, val askCell: Int = 0) {
     val text: String get() = value?.toString() ?: ""
     companion object { val Empty = CellValue() }
 }
@@ -41,25 +41,33 @@ enum class CellMark { NONE, ACTIVE, FIRST_WRONG }
  * The seam between the boards and the input method. Boards lay out cells and call [Cell] for each;
  * [Controls] is drawn once under the board (the pad draws its keys there, the pen draws nothing).
  *
- * The pen implementation (`DigitInkCell`/`DigitInkRow`, #26 step 2) plugs in here: it writes into the
- * cell itself, reports [CellValue.confidence] and, for a close call, [CellValue.ask]. The boards answer
- * an [CellValue.ask] through [ConfirmDigit]; they do not know which input is active.
+ * [PenInput] (#26's `DigitRowState` ink rows) writes into the cell itself, reports [CellValue.confidence]
+ * and, for a close call, [CellValue.ask] ([CellValue.askCell] = which digit of the row). The boards show
+ * [ConfirmDigit] and hand the pick back through [confirm]; they do not know which input is active.
+ * [item] is the exercise id, so an input can keep per-item state (the pen keeps the child's ink).
  */
 interface DigitInput {
     val method: InputMethod
 
     @Composable
     fun Cell(
-        cell: InputCell, value: CellValue, focused: Boolean, mark: CellMark, enabled: Boolean,
+        item: String, cell: InputCell, value: CellValue, focused: Boolean, mark: CellMark, enabled: Boolean,
         onFocus: () -> Unit, onValue: (CellValue) -> Unit, modifier: Modifier,
     )
+
+    /** Laid-out width of [cell], so tables can give a column one shared width. */
+    fun width(cell: InputCell): Dp = CellStyle.width(cell)
+
+    /** The child answered "Tarkoititko X vai Y?" with [digit]; returns the cell's new value. */
+    fun confirm(item: String, cell: InputCell, value: CellValue, digit: Int): CellValue = value.copy(value = digit, ask = null)
 
     @Composable
     fun Controls(focused: InputCell?, value: CellValue?, enabled: Boolean, onValue: (CellValue) -> Unit, onNext: () -> Unit)
 }
 
 object CellStyle {
-    val digit: Dp = 56.dp
+    /** Large enough to write a digit with the pen (the column grid is squared paper of this size). */
+    val digit: Dp = 72.dp
     val small: Dp = 48.dp
     fun width(cell: InputCell) = if (cell.maxDigits == 1) (if (cell.small) small else digit) else (40 * cell.maxDigits + 24).dp
     val activeColumn = Color(0xFFFFF1C2)
@@ -72,7 +80,7 @@ object PadInput : DigitInput {
 
     @Composable
     override fun Cell(
-        cell: InputCell, value: CellValue, focused: Boolean, mark: CellMark, enabled: Boolean,
+        item: String, cell: InputCell, value: CellValue, focused: Boolean, mark: CellMark, enabled: Boolean,
         onFocus: () -> Unit, onValue: (CellValue) -> Unit, modifier: Modifier,
     ) {
         val size = if (cell.small) CellStyle.small else CellStyle.digit

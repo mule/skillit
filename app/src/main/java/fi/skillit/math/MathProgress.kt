@@ -13,16 +13,14 @@ import fi.skillit.engine.SessionEvent
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.*
 
-/** How the child writes answers. The pad is unlocked only from the parent area. */
-enum class MathInputMode { PEN, PAD }
-
 data class LessonRecord(val completions: Int, val bestXp: Int, val rewardWord: String? = null)
 
 data class ActiveLesson(val plan: MathCourse.Plan, val events: List<SessionEvent> = emptyList())
 
 /**
  * Math progress. Lives in its own DataStore file, apart from the music save (`skillit-progress`), so
- * math XP is separate and nothing here can touch music or nature state.
+ * math XP is separate and nothing here can touch music or nature state. The pen / number-pad choice is
+ * #26's [fi.skillit.ink.InputModeSettings], changed only from the PIN-protected parent area.
  */
 data class MathProgress(
     val packId: String? = null,
@@ -31,7 +29,6 @@ data class MathProgress(
     val xp: Int = 0,
     val lessons: Map<String, LessonRecord> = emptyMap(),
     val active: ActiveLesson? = null,
-    val input: MathInputMode = MathInputMode.PEN,
     val pin: ParentPin? = null,
     /** AdaptiveSelector's Finnish explanation of the latest lesson, shown in the parent area. */
     val lastExplanation: String? = null,
@@ -41,6 +38,12 @@ data class MathProgress(
     }
 }
 
+/**
+ * The math save cannot be read. [pin] is the parent PIN if it could still be recovered from the damaged
+ * value; a fresh start keeps it, so a corrupt save never opens the parent area without the PIN.
+ */
+class CorruptMathSave(val pin: ParentPin?, cause: Throwable? = null) : Exception("Corrupt math save", cause)
+
 interface MathStore {
     suspend fun load(): MathProgress
     suspend fun save(progress: MathProgress)
@@ -49,7 +52,12 @@ interface MathStore {
 val Context.mathDataStore by preferencesDataStore(name = "skillit-math", corruptionHandler = MathRepository.corruptionHandler)
 
 class MathRepository(private val dataStore: DataStore<Preferences>) : MathStore {
-    override suspend fun load(): MathProgress = dataStore.data.first()[key]?.let(MathProgressCodec::decode) ?: MathProgress()
+    override suspend fun load(): MathProgress {
+        val raw = dataStore.data.first()[key] ?: return MathProgress()
+        return try { MathProgressCodec.decode(raw) } catch (e: IllegalArgumentException) {
+            throw CorruptMathSave(MathProgressCodec.salvagePin(raw), e)
+        }
+    }
     override suspend fun save(progress: MathProgress) {
         val raw = MathProgressCodec.encode(progress)
         dataStore.edit { it[key] = raw }
@@ -70,7 +78,6 @@ object MathProgressCodec {
         p.packId?.let { put("pack", it) }
         put("packVersion", p.packVersion)
         put("xp", p.xp)
-        put("input", p.input.name)
         p.lastExplanation?.let { put("explanation", it) }
         putJsonArray("lessons") {
             p.lessons.toSortedMap().forEach { (id, r) -> addJsonObject {
@@ -91,8 +98,18 @@ object MathProgressCodec {
         } }
     }.toString()
 
-    fun decode(raw: String): MathProgress {
-        val json = try { Json.parseToJsonElement(raw).jsonObject } catch (e: Exception) { throw IllegalArgumentException("Corrupt math save", e) }
+    /** The PIN from a save that no longer decodes as a whole, or null. */
+    fun salvagePin(raw: String): ParentPin? = try {
+        Json.parseToJsonElement(raw).jsonObject["pin"]?.jsonObject?.let {
+            ParentPin(it.string("salt"), it.string("hash"), it.int("failures"), it.getValue("lockedUntil").jsonPrimitive.long)
+        }?.takeIf { ParentPin.wellFormed(it) }
+    } catch (_: Exception) { null }
+
+    fun decode(raw: String): MathProgress = try { decodeStrict(raw) } catch (e: IllegalArgumentException) { throw e }
+        catch (e: Exception) { throw IllegalArgumentException("Corrupt math save", e) }
+
+    private fun decodeStrict(raw: String): MathProgress {
+        val json = Json.parseToJsonElement(raw).jsonObject
         require(json.int("schema") == SCHEMA) { "Unknown math save schema" }
         val lessons = json.getValue("lessons").jsonArray.associate { element ->
             val o = element.jsonObject
@@ -110,7 +127,7 @@ object MathProgressCodec {
         val pin = json["pin"]?.jsonObject?.let { ParentPin(it.string("salt"), it.string("hash"), it.int("failures"), it.getValue("lockedUntil").jsonPrimitive.long) }
         return MathProgress(
             json["pack"]?.jsonPrimitive?.content, json.int("packVersion"), json.int("xp"), lessons, active,
-            MathInputMode.valueOf(json.string("input")), pin, json["explanation"]?.jsonPrimitive?.content,
+            pin, json["explanation"]?.jsonPrimitive?.content,
         )
     }
 

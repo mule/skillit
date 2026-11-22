@@ -1,6 +1,9 @@
 package fi.skillit.math.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -62,8 +65,8 @@ sealed interface BoardKind {
                     rowHead != null -> rowHead
                     else -> "Ruutu ${r + 1}, ${c + 1}"
                 }
-                // A 1/0 table (“kuuluuko kertotauluun?”) takes a single digit.
-                val digits = if (spec.blanks.all { it.expected in 0..1 }) 1 else 3
+                // As many boxes as the longest answer in the table (1 for a 1/0 table): one shared column width.
+                val digits = spec.blanks.maxOf { it.expected.toString().length }
                 InputCell(blank.id, label, digits)
             }
         } }
@@ -80,7 +83,7 @@ sealed interface BoardKind {
     }
 
     companion object {
-        const val NUMBER_DIGITS = 6
+        const val NUMBER_DIGITS = 5
         fun of(exercise: PackExercise): BoardKind = when (val a = exercise.answer) {
             is AnswerSpec.ColumnMultiplication -> Column(a)
             is AnswerSpec.Steps -> Steps(a)
@@ -107,6 +110,12 @@ class AnswerDraft(val kind: BoardKind) {
     fun confidence(): Double? = values.values.mapNotNull { it.confidence }.minOrNull()
 
     fun set(id: String, value: CellValue) { values[id] = value }
+
+    /** Puts back a submitted answer (the given values of [check]); focus goes to its first wrong cell. */
+    fun restore(check: CheckResult) {
+        check.cells.forEach { c -> if (c.given != null && kind.cells.any { it.id == c.id }) values[c.id] = CellValue(c.given) }
+        focused = check.firstWrong?.id ?: focused
+    }
     fun next() {
         val cells = kind.cells
         val i = cells.indexOfFirst { it.id == focused }
@@ -124,7 +133,7 @@ fun MathBoard(exercise: PackExercise, draft: AnswerDraft, input: DigitInput, che
     val firstWrong = check?.firstWrong?.id
     val cellOf: @Composable (InputCell, Modifier) -> Unit = { cell, modifier ->
         input.Cell(
-            cell, draft.values[cell.id] ?: CellValue.Empty, draft.focused == cell.id,
+            exercise.id, cell, draft.values[cell.id] ?: CellValue.Empty, draft.focused == cell.id,
             if (cell.id == firstWrong) CellMark.FIRST_WRONG else CellMark.NONE, enabled,
             onFocus = { draft.focused = cell.id }, onValue = { draft.set(cell.id, it) }, modifier = modifier,
         )
@@ -133,7 +142,7 @@ fun MathBoard(exercise: PackExercise, draft: AnswerDraft, input: DigitInput, che
         when (val kind = draft.kind) {
             is BoardKind.Column -> ColumnMultiplicationBoard(kind, draft, cellOf)
             is BoardKind.Steps -> StepsBoard(kind, exercise, cellOf)
-            is BoardKind.Table -> TableBoard(kind, cellOf)
+            is BoardKind.Table -> TableBoard(kind, input::width, cellOf)
             is BoardKind.Missing -> MissingFactorBoard(kind, cellOf)
             is BoardKind.Number -> if (kind.word) WordProblemCard(exercise, kind, cellOf) else NumberBoard(kind, cellOf)
         }
@@ -144,7 +153,7 @@ fun MathBoard(exercise: PackExercise, draft: AnswerDraft, input: DigitInput, che
         draft.pendingAsk?.let { cell ->
             val ask = draft.values.getValue(cell.id).ask!!
             ConfirmDigit(cell, ask) { digit ->
-                draft.set(cell.id, draft.values.getValue(cell.id).copy(value = digit, ask = null))
+                draft.set(cell.id, input.confirm(exercise.id, cell, draft.values.getValue(cell.id), digit))
             }
         }
         val focusedCell = draft.kind.cells.find { it.id == draft.focused }
@@ -194,7 +203,7 @@ fun ColumnMultiplicationBoard(kind: BoardKind.Column, draft: AnswerDraft, cellOf
         Text("Nyt: $where${placeName(it.column)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
     }
-    Column(Modifier.background(Color(0xFFFFFFFF), RoundedCornerShape(8.dp)).padding(8.dp).semantics(mergeDescendants = false) {
+    Column(Modifier.horizontalScroll(rememberScrollState()).background(Color(0xFFFFFFFF), RoundedCornerShape(8.dp)).padding(8.dp).semantics(mergeDescendants = false) {
         contentDescription = "Allekkain laskettava $top kertaa $bottom"
     }) {
         rows.forEach { row ->
@@ -224,7 +233,7 @@ fun StepsBoard(kind: BoardKind.Steps, exercise: PackExercise, cellOf: @Composabl
     exercise.expression?.let { Text(it.replace('*', '·').replace('/', ':'), style = MaterialTheme.typography.headlineSmall) }
     Text("Laske yksi vaihe kerrallaan: ensin sulut, sitten kertolaskut, lopuksi yhteenlaskut.")
     kind.cells.forEachIndexed { i, cell ->
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(Modifier.horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(if (i == kind.cells.lastIndex) "V:" else "${i + 1}.", style = MaterialTheme.typography.titleLarge, modifier = Modifier.width(40.dp))
             Text("=", style = MaterialTheme.typography.titleLarge)
             cellOf(cell, Modifier)
@@ -234,16 +243,22 @@ fun StepsBoard(kind: BoardKind.Steps, exercise: PackExercise, cellOf: @Composabl
 
 /** Product grid, times-table strips, 1/0 tables and the letter code: given headers, blanks to fill. */
 @Composable
-fun TableBoard(kind: BoardKind.Table, cellOf: @Composable (InputCell, Modifier) -> Unit) {
+fun TableBoard(kind: BoardKind.Table, cellWidth: (InputCell) -> Dp, cellOf: @Composable (InputCell, Modifier) -> Unit) {
     val inputs = kind.cells.associateBy { it.id }
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        kind.spec.rows.forEach { row ->
+    val rows = kind.spec.rows
+    // Every column is as wide as its widest cell, so headers line up with their answers; a table wider
+    // than the screen scrolls sideways instead of squeezing its last cells.
+    val widths = rows[0].indices.map { c ->
+        maxOf(TABLE_MIN_COLUMN, rows.maxOf { row -> (row[c] as? TableEntry.Blank)?.let { cellWidth(inputs.getValue(it.id)) } ?: TABLE_MIN_COLUMN })
+    }
+    Column(Modifier.horizontalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        rows.forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                row.forEach { entry ->
+                row.forEachIndexed { c, entry ->
                     when (entry) {
-                        is TableEntry.Given -> Box(Modifier.widthIn(min = 64.dp).heightIn(min = 56.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(6.dp)).padding(4.dp),
+                        is TableEntry.Given -> Box(Modifier.width(widths[c]).heightIn(min = 56.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(6.dp)).padding(4.dp),
                             contentAlignment = Alignment.Center) { Text(entry.text, textAlign = TextAlign.Center, style = MaterialTheme.typography.titleMedium) }
-                        is TableEntry.Blank -> Box(Modifier.widthIn(min = 64.dp), contentAlignment = Alignment.Center) { cellOf(inputs.getValue(entry.id), Modifier) }
+                        is TableEntry.Blank -> Box(Modifier.width(widths[c]), contentAlignment = Alignment.Center) { cellOf(inputs.getValue(entry.id), Modifier) }
                     }
                 }
             }
@@ -251,11 +266,13 @@ fun TableBoard(kind: BoardKind.Table, cellOf: @Composable (InputCell, Modifier) 
     }
 }
 
+private val TABLE_MIN_COLUMN = 72.dp
+
 @Composable
 fun MissingFactorBoard(kind: BoardKind.Missing, cellOf: @Composable (InputCell, Modifier) -> Unit) {
     val spec = kind.spec
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.semantics(mergeDescendants = false) {}) {
+        modifier = Modifier.horizontalScroll(rememberScrollState())) {
         spec.factors.forEachIndexed { i, f ->
             if (i > 0) Text("·", style = MaterialTheme.typography.headlineMedium)
             if (f == null) cellOf(kind.cells.single(), Modifier) else Text("$f", style = MaterialTheme.typography.headlineMedium)
@@ -267,7 +284,7 @@ fun MissingFactorBoard(kind: BoardKind.Missing, cellOf: @Composable (InputCell, 
 
 @Composable
 fun NumberBoard(kind: BoardKind.Number, cellOf: @Composable (InputCell, Modifier) -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(Modifier.horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("=", style = MaterialTheme.typography.headlineMedium)
         cellOf(kind.cells.single(), Modifier)
     }
@@ -289,7 +306,7 @@ fun WordProblemCard(exercise: PackExercise, kind: BoardKind.Number, cellOf: @Com
                 Text(if (marking) "Piilota tiedot" else "Merkitse tiedot")
             }
             if (marking) BarModel(factors, exercise.prompt)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("V:", style = MaterialTheme.typography.headlineMedium)
                 cellOf(kind.cells.single(), Modifier)
             }

@@ -39,6 +39,10 @@ data class ParentPin(
         private const val FREE_TRIES = 3
         private const val ITERATIONS = 20_000
 
+        /** Hash and salt are hex of the expected lengths (used when salvaging a damaged save). */
+        fun wellFormed(p: ParentPin) = p.salt.length == 32 && p.hash.length == 64 &&
+            (p.salt + p.hash).all { it in '0'..'9' || it in 'a'..'f' } && p.failures >= 0 && p.lockedUntil >= 0
+
         fun valid(pin: String) = pin.length == LENGTH && pin.all { it in '0'..'9' }
 
         fun create(pin: String, random: SecureRandom = SecureRandom()): ParentPin {

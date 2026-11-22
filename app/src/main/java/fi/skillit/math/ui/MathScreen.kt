@@ -26,6 +26,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
+import kotlinx.coroutines.flow.Flow
+import fi.skillit.ink.InputMode
+import fi.skillit.ink.InputModeSettings
+import fi.skillit.ink.InputModeSwitch
+import fi.skillit.ink.MlKitDigitRecognizer
+import fi.skillit.ink.inkSettingsDataStore
 
 /** Where attempts go. On the device: [AttemptLog] under noBackupFilesDir, on an IO thread. */
 interface AttemptSink {
@@ -35,19 +41,24 @@ interface AttemptSink {
 
 /**
  * Everything the math area needs from outside, so UI tests can pass in-memory fakes.
- * [penInput] is null until #26's `DigitInkCell`/`DigitInkRow` is plugged in.
+ * [inputMode] is #26's pen / number-pad setting (pen by default); only the parent area calls [setInputMode].
+ * [penInput] makes a fresh pen input per lesson, so a replayed lesson never shows old ink.
  */
 class MathEnvironment(
     val loadCourse: suspend () -> MathCourse,
     val store: MathStore,
     val attempts: AttemptSink,
+    val inputMode: Flow<InputMode>,
+    val setInputMode: suspend (InputMode) -> Unit,
+    val penInput: () -> DigitInput,
     val clock: () -> Long = System::currentTimeMillis,
-    val penInput: DigitInput? = null,
 ) {
     companion object {
         fun android(context: Context): MathEnvironment {
             val app = context.applicationContext
             val log by lazy { AttemptLog.open(app) }
+            val settings = InputModeSettings(app.inkSettingsDataStore)
+            val recognizer by lazy { MlKitDigitRecognizer() }
             return MathEnvironment(
                 loadCourse = { withContext(Dispatchers.IO) {
                     val text = runCatching { app.assets.open(MathCourse.PACK_ASSET) }.getOrNull()
@@ -59,42 +70,52 @@ class MathEnvironment(
                     override suspend fun read() = withContext(Dispatchers.IO) { log.read() }
                     override suspend fun append(event: AttemptEvent) { withContext(Dispatchers.IO) { log.append(event) } }
                 },
+                inputMode = settings.mode,
+                setInputMode = settings::setMode,
+                penInput = { PenInput(recognizer) },
             )
         }
     }
 }
 
-/** Pen not plugged in yet (#26): the board is shown, writing is not possible, and the parent can unlock the pad. */
-private object PenPendingInput : DigitInput {
-    override val method = InputMethod.PEN
-    @Composable override fun Cell(cell: InputCell, value: CellValue, focused: Boolean, mark: CellMark, enabled: Boolean,
-                                  onFocus: () -> Unit, onValue: (CellValue) -> Unit, modifier: Modifier) =
-        PadInput.Cell(cell, value, false, mark, false, onFocus, onValue, modifier)
-    @Composable override fun Controls(focused: InputCell?, value: CellValue?, enabled: Boolean, onValue: (CellValue) -> Unit, onNext: () -> Unit) {
-        Text("Kynällä kirjoittaminen tulee tähän pian. Vanhempi voi sillä välin ottaa numeronäppäimistön käyttöön vanhempien alueelta.",
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-    }
+private enum class Pane { MAP, LESSON, PIN, PARENT, SET_PIN;
+    /** The parent area is open only for this foreground visit: never restored, never kept across ON_STOP. */
+    val unlocked get() = this == PIN || this == PARENT || this == SET_PIN
 }
-
-private enum class Pane { MAP, LESSON, PIN, PARENT, SET_PIN }
+private val PaneSaver = androidx.compose.runtime.saveable.Saver<MutableState<Pane>, String>(
+    save = { (if (it.value.unlocked) Pane.MAP else it.value).name },
+    restore = { mutableStateOf(Pane.valueOf(it)) },
+)
 
 /** Kertolaskuseikkailu: lesson map, lessons with boards, and the parent area behind a long press + PIN. */
 @Composable
-fun MathScreen(env: MathEnvironment, onExit: () -> Unit) {
+fun MathScreen(env: MathEnvironment, onScreenChanged: () -> Unit = {}, onExit: () -> Unit) {
     val scope = rememberCoroutineScope()
     var course by remember { mutableStateOf<MathCourse?>(null) }
     var progress by remember { mutableStateOf<MathProgress?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var warning by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
-    var pane by rememberSaveable { mutableStateOf(Pane.MAP) }
+    var pane by rememberSaveable(saver = PaneSaver) { mutableStateOf(Pane.MAP) }
+    var corrupt by remember { mutableStateOf<CorruptMathSave?>(null) }
+    var confirmFresh by remember { mutableStateOf(false) }
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP && pane.unlocked) pane = Pane.MAP
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
     var confirmSwitch by remember { mutableStateOf<String?>(null) }
+    val inputMode by env.inputMode.collectAsState(initial = InputMode.Pen)
 
     fun load() {
         busy = true
         scope.launch {
-            try { course = env.loadCourse(); progress = env.store.load(); error = null }
+            try { course = env.loadCourse(); progress = env.store.load(); error = null; corrupt = null }
             catch (e: CancellationException) { throw e }
+            catch (e: CorruptMathSave) { corrupt = e; error = null }
             catch (_: Exception) { error = "Kertolaskuseikkailua ei voitu avata." }
             finally { busy = false }
         }
@@ -147,6 +168,9 @@ fun MathScreen(env: MathEnvironment, onExit: () -> Unit) {
         val exercises = c?.exercises(a.plan) ?: return@remember null
         runCatching { Triple(a, exercises, c.session(exercises, a.events)) }.getOrNull()
     }
+    // A new screen or a new question starts at the top, like music and nature.
+    val screenKey = listOf(pane, active?.third?.current?.token, active?.third?.complete, saved?.pin == null)
+    LaunchedEffect(screenKey) { onScreenChanged() }
     BackHandler(enabled = pane != Pane.MAP || confirmSwitch != null) {
         if (confirmSwitch != null) confirmSwitch = null else pane = Pane.MAP
     }
@@ -162,6 +186,16 @@ fun MathScreen(env: MathEnvironment, onExit: () -> Unit) {
             } }
         }
         warning?.let { Text(it, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
+        corrupt?.let { damaged ->
+            Card { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Kertolaskuseikkailun tallennus on vioittunut, eikä sitä voi lukea.", modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+                Text("Voit aloittaa kertolaskut alusta. Musiikin ja luontoretken tallennukset säilyvät." +
+                    if (damaged.pin == null) " Vanhempi asettaa PIN-koodin uudelleen." else " Vanhempien PIN-koodi säilyy.")
+                TextButton(onClick = { load() }, enabled = !busy, modifier = Modifier.heightIn(min = 48.dp)) { Text("Yritä uudelleen") }
+                TextButton(onClick = { confirmFresh = true }, enabled = !busy, modifier = Modifier.heightIn(min = 48.dp)) { Text("Aloita kertolaskut alusta") }
+                TextButton(onClick = onExit, modifier = Modifier.heightIn(min = 48.dp)) { Text("Etusivu") }
+            } }
+        }
         if (saved == null || c == null) {
             if (busy) Text("Ladataan kertolaskuseikkailua…")
             return@Column
@@ -187,12 +221,16 @@ fun MathScreen(env: MathEnvironment, onExit: () -> Unit) {
                 }
             }
             Pane.PARENT -> ParentArea(saved, busy,
-                onInput = { mode -> save(saved.copy(input = mode)) },
+                inputMode = inputMode,
+                onInput = { mode -> scope.launch {
+                    try { env.setInputMode(mode) } catch (e: CancellationException) { throw e } catch (_: Exception) { error = "Asetusta ei voitu tallentaa." }
+                } },
                 onChangePin = { pane = Pane.SET_PIN },
                 onClose = { pane = Pane.MAP })
             Pane.LESSON -> if (active == null) LaunchedEffect(Unit) { pane = Pane.MAP } else {
                 val (lesson, exercises, session) = active
-                LessonScreen(c, lesson, exercises, session, inputFor(saved, env), busy, env.clock,
+                val pen = remember(lesson.plan) { env.penInput() }
+                LessonScreen(c, lesson, exercises, session, if (inputMode == InputMode.NumberPad) PadInput else pen, busy, env.clock,
                     onEvent = { updated, attempt -> commit(lesson, updated, attempt) },
                     onFinish = { xp, reward ->
                         val old = saved.lessons[lesson.plan.stopId]
@@ -210,6 +248,20 @@ fun MathScreen(env: MathEnvironment, onExit: () -> Unit) {
             }
         }
     }
+    if (confirmFresh) AlertDialog(onDismissRequest = { confirmFresh = false },
+        title = { Text("Aloitetaanko kertolaskut alusta?") },
+        text = { Text("Kertolaskujen pisteet ja keskeneräinen oppitunti nollataan. Harjoitushistoria ja muut aineet säilyvät.") },
+        confirmButton = { TextButton(onClick = {
+            confirmFresh = false
+            val keep = corrupt?.pin
+            busy = true
+            scope.launch {
+                try { env.store.save(MathProgress(pin = keep)); busy = false; load() }
+                catch (e: CancellationException) { throw e }
+                catch (_: Exception) { busy = false; error = "Tallennus epäonnistui. Yritä uudelleen." }
+            }
+        }, enabled = !busy) { Text("Aloita alusta") } },
+        dismissButton = { TextButton(onClick = { confirmFresh = false }) { Text("Peruuta") } })
     confirmSwitch?.let { stopId ->
         AlertDialog(onDismissRequest = { confirmSwitch = null },
             title = { Text("Vaihdetaanko oppituntia?") },
@@ -221,9 +273,6 @@ fun MathScreen(env: MathEnvironment, onExit: () -> Unit) {
             dismissButton = { TextButton(onClick = { confirmSwitch = null }) { Text("Peruuta") } })
     }
 }
-
-private fun inputFor(progress: MathProgress, env: MathEnvironment): DigitInput =
-    if (progress.input == MathInputMode.PAD) PadInput else env.penInput ?: PenPendingInput
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -294,7 +343,10 @@ private fun LessonScreen(
     val exercise = byId.getValue(attempt.question.id)
     // One draft per item, kept for its retry: the child fixes the marked cell, not the whole board.
     val drafts = remember(lesson.plan) { mutableMapOf<String, AnswerDraft>() }
-    val draft = drafts.getOrPut(exercise.id) { AnswerDraft(BoardKind.of(exercise)) }
+    // Seeded from the last submitted answer, so feedback and a retry show the child's work after resuming.
+    val draft = drafts.getOrPut(exercise.id) {
+        AnswerDraft(BoardKind.of(exercise)).also { d -> session.outcomes.lastOrNull { it.questionId == exercise.id }?.check?.let(d::restore) }
+    }
     val feedback = session.feedback
     val previous = if (feedback == null && attempt.retry) session.outcomes.lastOrNull { it.questionId == exercise.id }?.check else null
 
@@ -340,17 +392,10 @@ private fun LessonScreen(
 }
 
 @Composable
-private fun ParentArea(progress: MathProgress, busy: Boolean, onInput: (MathInputMode) -> Unit, onChangePin: () -> Unit, onClose: () -> Unit) {
+private fun ParentArea(progress: MathProgress, busy: Boolean, inputMode: InputMode, onInput: (InputMode) -> Unit, onChangePin: () -> Unit, onClose: () -> Unit) {
     Text("Vanhempien alue", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.semantics { heading() })
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.weight(1f)) {
-            Text("Numeronäppäimistö", style = MaterialTheme.typography.titleMedium)
-            Text("Oletuksena lapsi kirjoittaa kynällä. Näppäimistö on varakeino.")
-        }
-        Switch(checked = progress.input == MathInputMode.PAD, enabled = !busy,
-            onCheckedChange = { onInput(if (it) MathInputMode.PAD else MathInputMode.PEN) },
-            modifier = Modifier.semantics { contentDescription = "Numeronäppäimistö käytössä" })
-    }
+    Text("Oletuksena lapsi kirjoittaa kynällä. Numeronäppäimet ovat varakeino.")
+    InputModeSwitch(inputMode, onInput)
     Text("Matematiikan pisteet: ${progress.xp} XP · valmiita oppitunteja ${progress.lessons.size}")
     progress.lastExplanation?.let {
         Text("Viimeisimmän oppitunnin tehtävävalinta", style = MaterialTheme.typography.titleMedium)
@@ -380,13 +425,16 @@ private fun PinSetup(busy: Boolean, first: Boolean, onDone: (String) -> Unit) {
 @Composable
 private fun PinEntry(pin: ParentPin, clock: () -> Long, busy: Boolean, onCancel: () -> Unit, onResult: (ParentPin.Check) -> Unit) {
     var message by remember { mutableStateOf<String?>(null) }
+    var checking by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     Text("Vanhempien alue", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
     Text("Kirjoita PIN-koodi.")
     message?.let { Text(it, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
-    PinPad(enabled = !busy) { typed ->
+    // One guess at a time: the next guess is checked against the saved failure count.
+    PinPad(enabled = !busy && !checking) { typed ->
+        checking = true
         scope.launch {
-            val result = withContext(Dispatchers.Default) { pin.check(typed, clock()) }
+            val result = try { withContext(Dispatchers.Default) { pin.check(typed, clock()) } } finally { checking = false }
             message = when (result) {
                 is ParentPin.Check.Ok -> null
                 is ParentPin.Check.Wrong -> if (result.updated.lockedUntil > 0) "Väärä koodi. Odota hetki ennen uutta yritystä." else "Väärä koodi."
