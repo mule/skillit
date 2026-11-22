@@ -31,8 +31,11 @@ sealed interface Expression {
     }
 
     companion object {
+        const val MAX_LENGTH = 200
+        const val MAX_DEPTH = 16
+
         /** Throws [IllegalArgumentException] for anything that is not a valid exact integer expression. */
-        fun parse(text: String): Expression = Parser(normalize(text)).run { expression().also { require(atEnd()) { "Unexpected '${rest()}'" } } }
+        fun parse(text: String): Expression = Parser(normalize(text).also { require(it.length <= MAX_LENGTH) { "Expression is too long" } }).run { expression().also { require(atEnd()) { "Unexpected '${rest()}'" } } }
 
         private fun normalize(text: String) = text.replace('×', '*').replace('·', '*').replace(':', '/').filterNot { it.isWhitespace() }
 
@@ -51,6 +54,7 @@ sealed interface Expression {
 
     private class Parser(val s: String) {
         var i = 0
+        var depth = 0
         fun atEnd() = i == s.length
         fun rest() = s.substring(i)
         fun expression(): Expression = chain("+-") { term() }
@@ -62,7 +66,12 @@ sealed interface Expression {
         }
         fun factor(): Expression {
             require(!atEnd()) { "Expression ends too early" }
-            if (s[i] == '(') { i++; val inner = expression(); require(!atEnd() && s[i] == ')') { "Missing ')'" }; i++; return inner }
+            if (s[i] == '(') {
+                // Bounded so a hostile pack cannot overflow the stack (an Error the validator would not catch).
+                require(++depth <= MAX_DEPTH) { "Parentheses nested too deeply" }
+                i++; val inner = expression(); depth--
+                require(!atEnd() && s[i] == ')') { "Missing ')'" }; i++; return inner
+            }
             val start = i
             while (!atEnd() && s[i].isDigit()) i++
             require(i > start && i - start <= 9) { "Expected a number at '${rest()}'" }
