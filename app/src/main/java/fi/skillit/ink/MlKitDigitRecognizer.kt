@@ -21,25 +21,33 @@ import kotlin.coroutines.resumeWithException
 interface DigitRecognizer {
     val modelTag: String
     val state: StateFlow<ModelState>
-    /** Checks for the on-device model and downloads it once if missing. Safe to call again after a failure. */
-    suspend fun prepare()
+    /**
+     * Checks for the on-device model. When it is missing, downloads it once over Wi-Fi if [allowDownload],
+     * otherwise stops at [ModelState.NotDownloaded] so a person can start the download explicitly.
+     * Safe to call again after a failure.
+     */
+    suspend fun prepare(allowDownload: Boolean = true)
     /** [strokes] are relative to the box's top-left corner; [width]×[height] is the box in px. */
     suspend fun recognize(strokes: List<InkStroke>, width: Float, height: Float): List<RawCandidate>
 }
 
 sealed interface ModelState {
     data object Checking : ModelState
+    /** Missing, and nobody has asked to download it yet. */
+    data object NotDownloaded : ModelState
     data object Downloading : ModelState
     data object Ready : ModelState
     data class Failed(val message: String) : ModelState
 }
 
+const val WIFI_WAIT_MESSAGE = "Ladataan käsialan tunnistusmallia (kerran). Lataus alkaa, kun tabletti on Wi-Fi-verkossa."
 const val OFFLINE_MODEL_MESSAGE = "Käsialan tunnistusmalli ladataan kerran ja sen jälkeen kaikki toimii ilman verkkoa. " +
     "Yhdistä tabletti Wi-Fi-verkkoon ja yritä uudelleen. Siihen asti voit vastata numeronäppäimillä."
 
 /**
- * ML Kit Digital Ink Recognition with the on-device model. The model (~20 MB) is downloaded once;
- * after that recognition is fully offline. Strokes are never sent anywhere: recognition runs locally.
+ * ML Kit Digital Ink Recognition with the on-device model. The model (~20 MB) is downloaded once, over
+ * Wi-Fi; after that recognition is fully offline. Strokes are never sent anywhere: recognition runs locally.
+ * ML Kit's usage logging is cut off in the manifest (no upload backend), see AndroidManifest.xml.
  */
 class MlKitDigitRecognizer(override val modelTag: String = "en-US") : DigitRecognizer {
     private val model: DigitalInkRecognitionModel = DigitalInkRecognitionModel.builder(
@@ -50,13 +58,15 @@ class MlKitDigitRecognizer(override val modelTag: String = "en-US") : DigitRecog
     private val _state = MutableStateFlow<ModelState>(ModelState.Checking)
     override val state: StateFlow<ModelState> = _state
 
-    override suspend fun prepare() {
+    override suspend fun prepare(allowDownload: Boolean) {
         if (_state.value == ModelState.Ready) return
         _state.value = ModelState.Checking
         try {
             if (!manager.isModelDownloaded(model).await()) {
+                if (!allowDownload) { _state.value = ModelState.NotDownloaded; return }
                 _state.value = ModelState.Downloading
-                manager.download(model, DownloadConditions.Builder().build()).await()
+                // Wi-Fi only: never spend ~20 MB of a metered or tethered connection (security review F5).
+                manager.download(model, DownloadConditions.Builder().requireWifi().build()).await()
             }
             client = DigitalInkRecognition.getClient(DigitalInkRecognizerOptions.builder(model).build())
             _state.value = ModelState.Ready

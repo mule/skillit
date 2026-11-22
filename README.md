@@ -36,12 +36,15 @@ uses ML Kit Digital Ink Recognition 18.1.0 with the **on-device** `en-US` model,
 digits 0–9. When two digits are close (stricter for 4/9 and 1/7), the game asks
 “Tarkoititko 4 vai 9?” instead of marking the answer wrong.
 
-- **`INTERNET` is used only to download the ML Kit model once (about 20 MB).** After that, pen
-  input works in airplane mode. Strokes are recognised on the tablet and **never leave it**;
+- **`INTERNET` is used only to download the ML Kit model once (about 20 MB), over Wi-Fi only.** After
+  that, pen input works in airplane mode. Strokes are recognised on the tablet and **never leave it**;
   samples and attempts are stored in app-private storage only (`allowBackup=false`).
-- ML Kit also merges `ACCESS_NETWORK_STATE`, `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED` and
-  `FOREGROUND_SERVICE` (from WorkManager, used for the download) and may send anonymous ML Kit
-  usage logs to Google. Neither carries handwriting. #30 reviews both before release.
+- ML Kit has no supported switch for its usage logging, so the manifest removes its upload backend
+  (datatransport CCT): logged events are dropped on the tablet. `RECEIVE_BOOT_COMPLETED` and
+  `FOREGROUND_SERVICE` are removed too. ML Kit still merges `ACCESS_NETWORK_STATE` and `WAKE_LOCK`.
+- CI runs `scripts/check-release-privacy.py`: the merged release manifest must match
+  `app/release-manifest-allowlist.txt`, the upload backend must stay removed, and `app/src/main` must not
+  import network clients. The device traffic check for #30 is in `docs/network-capture-check.md`.
 - Once a pen touches or hovers, the boxes accept the pen only (palm rejection). Before that,
   a finger can write (finger fallback). The S Pen side button erases a stroke.
 - If the model is missing and the tablet is offline, the screen says so and offers a retry. The
@@ -50,7 +53,10 @@ digits 0–9. When two digits are close (stricter for 4/9 and 1/7), the game ask
 **Ink lab (debug builds only).** A second launcher icon, “Ink lab”, lets you try the boxes, record
 labelled samples (each digit ten times) and see per-digit accuracy and the 4/9 and 1/7 mix-ups.
 Release builds don't contain it. Samples stay on the tablet; on a debug build a developer can read
-them with `adb shell run-as fi.skillit cat files/ink-lab/samples-v1.txt`.
+them with `adb shell run-as fi.skillit cat files/ink-lab/samples-v1.txt`. Anyone with adb access to a
+debug build can, so delete samples with “Poista näytteet” after the spike, don't keep a debug build on the
+child's tablet, and never commit `samples-v1.txt` (it is git-ignored). Only the default model downloads by
+itself in the lab; `fi-FI` needs a tap on “Lataa malli”.
 
 ## Architecture
 
