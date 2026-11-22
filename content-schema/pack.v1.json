@@ -1,0 +1,561 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skillit.local/content-schema/pack.v1.json",
+  "title": "Skillit content pack v1",
+  "description": "Exercises as data. Bundled in the APK (app/src/main/assets/packs/) and served by the backend in the same format. Kotlin model: engine fi.skillit.engine.pack.ContentPack. Expected answers are recomputed from expression/generator; see AnswerCheck.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "id",
+    "subject",
+    "grade",
+    "version",
+    "title",
+    "units"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "id": {
+      "$ref": "#/$defs/id"
+    },
+    "subject": {
+      "type": "string",
+      "minLength": 1,
+      "examples": [
+        "math",
+        "music",
+        "nature"
+      ],
+      "maxLength": 32
+    },
+    "grade": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 12
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "language": {
+      "type": "string",
+      "default": "fi"
+    },
+    "sourceRef": {
+      "$ref": "#/$defs/sourceRef"
+    },
+    "units": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/unit"
+      },
+      "maxItems": 50
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "sourceRef": {
+      "description": "Chapter, lesson and page numbers only. Never page content, scans or photos.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chapter"
+      ],
+      "properties": {
+        "chapter": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lesson": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pages": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "maxItems": 20
+        }
+      }
+    },
+    "unit": {
+      "description": "One level of the session; the unit index is the level.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "exercises"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "sourceRef": {
+          "$ref": "#/$defs/sourceRef"
+        },
+        "exercises": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/exercise"
+          }
+        }
+      }
+    },
+    "exercise": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "prompt",
+        "hint",
+        "explanation",
+        "answer"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "prompt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "hint": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "explanation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "answer": {
+          "$ref": "#/$defs/answer"
+        },
+        "expression": {
+          "$ref": "#/$defs/expression"
+        },
+        "generator": {
+          "$ref": "#/$defs/generator"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "expression"
+          ]
+        },
+        {
+          "required": [
+            "generator"
+          ]
+        },
+        {
+          "properties": {
+            "answer": {
+              "properties": {
+                "type": {
+                  "const": "fill-table"
+                },
+                "rows": {
+                  "items": {
+                    "items": {
+                      "if": {
+                        "properties": {
+                          "type": {
+                            "const": "blank"
+                          }
+                        }
+                      },
+                      "then": {
+                        "required": [
+                          "expression"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "answer": {
+                "properties": {
+                  "type": {
+                    "const": "fill-table"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "expression"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "expression": {
+      "description": "Exact integer arithmetic: ASCII digits, + - * / ( ), also × · and : (division); ASCII space only. At most 16 nested parentheses. Not allowed on fill-table exercises (use per-blank expressions).",
+      "type": "string",
+      "pattern": "^[0-9+\\-*/():×· ]+$",
+      "maxLength": 200
+    },
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "family",
+        "seed"
+      ],
+      "properties": {
+        "family": {
+          "$ref": "#/$defs/id"
+        },
+        "params": {
+          "type": "object",
+          "maxProperties": 20,
+          "description": "At most 1000 characters as JSON."
+        },
+        "seed": {
+          "type": "integer"
+        }
+      },
+      "description": "Only accepted when the app has a recomputer registered for this family (mathgen, #21); an unknown family rejects the pack."
+    },
+    "answer": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "choice",
+            "numeric",
+            "column-multiplication",
+            "steps",
+            "fill-table",
+            "missing-factor"
+          ]
+        }
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/choiceAnswer"
+        },
+        {
+          "$ref": "#/$defs/numericAnswer"
+        },
+        {
+          "$ref": "#/$defs/columnMultiplicationAnswer"
+        },
+        {
+          "$ref": "#/$defs/stepsAnswer"
+        },
+        {
+          "$ref": "#/$defs/fillTableAnswer"
+        },
+        {
+          "$ref": "#/$defs/missingFactorAnswer"
+        }
+      ]
+    },
+    "choiceAnswer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "choices",
+        "correctId"
+      ],
+      "properties": {
+        "type": {
+          "const": "choice"
+        },
+        "choices": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "value": {
+                "type": "integer",
+                "description": "The number this choice stands for. Required on every choice when the exercise has an expression; exactly one must equal its value and be correctId."
+              }
+            }
+          },
+          "maxItems": 10
+        },
+        "correctId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "numericAnswer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "expected"
+      ],
+      "properties": {
+        "type": {
+          "const": "numeric"
+        },
+        "expected": {
+          "type": "integer"
+        }
+      }
+    },
+    "columnMultiplicationAnswer": {
+      "description": "Cells in solving order. Ids: p{row}.{col} partial digit, c{row}.{col} carry, s{col} sum carry, r{col} result digit; column 0 = ones.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "factors",
+        "cells"
+      ],
+      "properties": {
+        "type": {
+          "const": "column-multiplication"
+        },
+        "factors": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 99999
+          }
+        },
+        "cells": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "kind",
+              "row",
+              "column",
+              "expected"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^([pc][0-9]+\\.[0-9]+|[sr][0-9]+)$"
+              },
+              "kind": {
+                "enum": [
+                  "carry",
+                  "partial",
+                  "sum-carry",
+                  "result"
+                ]
+              },
+              "row": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "column": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "expected": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            }
+          },
+          "maxItems": 200
+        }
+      }
+    },
+    "stepsAnswer": {
+      "description": "Intermediate values in evaluation order (cells s0, s1, ...); the last is the final answer.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "values"
+      ],
+      "properties": {
+        "type": {
+          "const": "steps"
+        },
+        "values": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "maxItems": 10
+        }
+      }
+    },
+    "fillTableAnswer": {
+      "description": "Rectangular grid; blanks are checked in row-major order.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "rows"
+      ],
+      "properties": {
+        "type": {
+          "const": "fill-table"
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "text"
+                  ],
+                  "properties": {
+                    "type": {
+                      "const": "given"
+                    },
+                    "text": {
+                      "type": "string",
+                      "maxLength": 50
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "id",
+                    "expected"
+                  ],
+                  "properties": {
+                    "type": {
+                      "const": "blank"
+                    },
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 32
+                    },
+                    "expected": {
+                      "type": "integer"
+                    },
+                    "expression": {
+                      "$ref": "#/$defs/expression"
+                    }
+                  }
+                }
+              ]
+            },
+            "maxItems": 20
+          },
+          "maxItems": 20
+        }
+      }
+    },
+    "missingFactorAnswer": {
+      "description": "factors[0] × factors[1] × ... = product with exactly one unknown (null or a missing product); cell id 'missing'.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "factors"
+      ],
+      "properties": {
+        "type": {
+          "const": "missing-factor"
+        },
+        "factors": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 4,
+          "items": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          }
+        },
+        "product": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{"schema":1,"pack":"music-grade4-fi","version":1,"started":true,"muted":false,"events":[
+    {"action":"HINT","token":"m1:0","choice":""},
+    {"action":"ANSWER","token":"m1:0","choice":"o3"},
+    {"action":"NEXT","token":"m1:0","choice":""},
+    {"action":"ANSWER","token":"m2:0","choice":"o0"},
+    {"action":"NEXT","token":"m2:0","choice":""},
+    {"action":"ANSWER","token":"m3:0","choice":"o1"},
+    {"action":"NEXT","token":"m3:0","choice":""},
+    {"action":"HINT","token":"m4:0","choice":""},
+    {"action":"ANSWER","token":"m4:0","choice":"o0"},
+    {"action":"NEXT","token":"m4:0","choice":""},
+    {"action":"ANSWER","token":"m5:0","choice":"o3"},
+    {"action":"NEXT","token":"m5:0","choice":""},
+    {"action":"ANSWER","token":"m2:1","choice":"o2"},
+    {"action":"NEXT","token":"m2:1","choice":""},
+    {"action":"HINT","token":"m6:0","choice":""},
+    {"action":"ANSWER","token":"m6:0","choice":"o2"},
+    {"action":"NEXT","token":"m6:0","choice":""},
+    {"action":"ANSWER","token":"m7:0","choice":"o1"},
+    {"action":"NEXT","token":"m7:0","choice":""},
+    {"action":"ANSWER","token":"m8:0","choice":"o0"}
+  ]}
