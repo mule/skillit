@@ -65,9 +65,13 @@ class DigitRowState(val cells: Int, val kind: CellKind = CellKind.Answer) {
     val unreadable: Set<Int>
         get() = if (mode == InputMode.NumberPad) emptySet() else readings.filterValues { it is DigitReading.Unreadable }.keys
 
-    /** The row as written, left to right, once every cell has a digit; leading empty cells are allowed. */
+    /**
+     * The row as written, left to right, once every cell has a digit. Leading cells without ink are allowed;
+     * a cell that is still asking “Tarkoititko…?” or could not be read is not empty, so there is no answer yet.
+     */
     val answer: String?
         get() {
+            if (questions.isNotEmpty() || unreadable.isNotEmpty()) return null
             val d = digits
             val first = d.indexOfFirst { it != null }
             if (first < 0 || d.drop(first).any { it == null }) return null
