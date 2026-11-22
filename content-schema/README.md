@@ -9,11 +9,13 @@ Kotlin model: `engine/src/main/kotlin/fi/skillit/engine/pack/ContentPack.kt` (ko
   Non-choice answers are checked per cell, in solving order, so the UI can highlight the first wrong cell.
 - **Answers are recomputed, never trusted.** An answer counts as checked only when
   - the exercise `expression` recomputes it (for `choice`, every choice carries a `value` and exactly one equals the
-    result, which must be `correctId`; `steps` must equal the evaluation order), or
+    result, which must be `correctId`; `steps` must equal the school order: innermost parentheses first, then
+    `·` and `:` left to right, then `+` and `-` left to right, one reduction per step, e.g. `30 + 5 · (3 + 6)` → 9, 45, 75), or
   - each `fill-table` blank has its own `expression` (a table may not use an exercise-level expression), or
   - a registered `AnswerRecomputer` (from `mathgen`, #21) ran and rebuilt exactly the stored answer.
   An unknown generator family always rejects the pack. `ContentPack.parse` rejects the pack on any mismatch.
 - **Expressions** use only ASCII digits, `+ - * / ( )`, `×`, `·`, `:` and ASCII spaces (at most 200 characters, 16 nested parentheses).
+- **Nesting:** JSON deeper than 32 levels is rejected before decoding (stack safety).
 - **Size limits** (`PackLimits`, mirrored in the schema): titles 200, prompt 500, hint and explanation 1000 characters;
   50 units, 100 exercises per unit, 10 choices, 20×20 tables, 200 digit cells, 20 generator params (1000 chars as JSON, model only).
 - **`sourceRef` holds chapter, lesson and page numbers only**: never page text, scans or photos.

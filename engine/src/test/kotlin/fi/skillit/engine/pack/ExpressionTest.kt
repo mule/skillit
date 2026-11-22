@@ -14,6 +14,28 @@ class ExpressionTest {
         assertEquals(listOf(42), Expression.parse("42").steps())
     }
 
+    @Test fun stepsFollowFinnishSchoolOrderOneReductionAtATime() {
+        val cases = mapOf(
+            "1 + 2 + 3 * 4" to listOf(12, 3, 15),
+            "3 + 4 * 5 + 6 * 7" to listOf(20, 42, 23, 65),
+            "30 + 5 * (3 + 6)" to listOf(9, 45, 75),
+            "2 * (10 - 4) + 1" to listOf(6, 12, 13),
+            "48 : (2 + 6) - 3" to listOf(8, 6, 3),
+            "100 - (2 * (3 + 4))" to listOf(7, 14, 86),
+            "(1 + 2) * (3 + 4)" to listOf(3, 7, 21),
+            "(1 + 2) + 3 * 4" to listOf(3, 12, 15), // written parentheses are kept, not re-derived
+            "12 : 3 * 2 + 1" to listOf(4, 8, 9),
+            "20 - 6 - 4" to listOf(14, 10),
+            "(7)" to listOf(7),
+            "((2 + 3))" to listOf(5),
+        )
+        cases.forEach { (text, steps) ->
+            val expression = Expression.parse(text)
+            assertEquals(text, steps, expression.steps())
+            assertEquals(text, steps.last(), expression.value)
+        }
+    }
+
     @Test fun factorsOnlyForPureProducts() {
         assertEquals(listOf(2, 3, 4), Expression.parse("2 * 3 * 4").factors())
         assertEquals(listOf(2, 3, 4), Expression.parse("2 * (3 * 4)").factors())
