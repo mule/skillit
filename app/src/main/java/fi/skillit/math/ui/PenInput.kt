@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import fi.skillit.engine.adaptive.InputMethod
+import fi.skillit.coach.rowInk
 import fi.skillit.ink.*
 import kotlinx.coroutines.delay
 
@@ -78,6 +79,12 @@ class PenInput(private val recognizer: DigitRecognizer) : DigitInput {
             if (state.unreadable.isNotEmpty()) Text("Kirjoita numero uudelleen.", style = MaterialTheme.typography.bodySmall)
         }
     }
+
+    /** Ink already handed to the coach, per row, so a retry only reports the cells the child rewrote. */
+    private val reported = mutableMapOf<Pair<String, String>, Map<Int, List<InkStroke>>>()
+
+    override fun written(item: String): List<fi.skillit.coach.WrittenDigit> =
+        fi.skillit.coach.writtenSince(item, rows.filterKeys { it.first == item }.mapValues { it.value.rowInk() }, reported)
 
     override fun width(cell: InputCell) = (if (cell.small) CellStyle.small else CellStyle.digit) * cell.maxDigits
 

@@ -31,6 +31,9 @@ import fi.skillit.music.MusicPack
 import fi.skillit.music.Staff
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import fi.skillit.coach.HandwritingData
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,7 +58,11 @@ fun SkillitTheme(content: @Composable () -> Unit) {
 }
 
 @Composable
-fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null, math: MathEnvironment? = null) {
+fun SkillitApp(
+    repository: ProgressRepository, output: PcmOutput? = null, math: MathEnvironment? = null,
+    /** Removes the handwriting coach's data (#28) on reset. Blocking; called on an IO thread. Tests pass a fake. */
+    deleteHandwriting: (() -> Unit)? = null,
+) {
     var progress by remember { mutableStateOf<SavedProgress?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
@@ -258,7 +265,17 @@ fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null, math: 
         }
     }, confirmButton = { TextButton(onClick = { settings = false }) { Text("Sulje") } })
     if (confirmReset) AlertDialog(onDismissRequest = { confirmReset = false }, title = { Text("Aloitetaanko alusta?") },
-        text = { Text("Seikkailu ja harjoituskierrokset nollataan. Ääniasetukset säilyvät.") },
-        confirmButton = { TextButton(onClick = { save(SavedProgress(muted = progress?.muted ?: false, volume = progress?.volume ?: .6f)) { confirmReset = false; inGame = true; practiceLevel = -1; rhythm = false } }, enabled = !busy) { Text("Nollaa") } },
+        text = { Text("Seikkailu ja harjoituskierrokset nollataan, ja käsialan harjoitustiedot (numeroiden kirjoitus) poistetaan. Ääniasetukset säilyvät.") },
+        confirmButton = { TextButton(onClick = {
+            save(SavedProgress(muted = progress?.muted ?: false, volume = progress?.volume ?: .6f)) {
+                confirmReset = false; inGame = true; practiceLevel = -1; rhythm = false
+                // Handwriting data must not carry over to a fresh start (security review F1). Off the main thread.
+                scope.launch {
+                    try { withContext(Dispatchers.IO) { (deleteHandwriting ?: { HandwritingData.deleteAll(context) })() } }
+                    catch (e: CancellationException) { throw e }
+                    catch (_: Exception) { error = "Käsialatietoja ei voitu poistaa. Yritä nollausta uudelleen." }
+                }
+            }
+        }, enabled = !busy) { Text("Nollaa") } },
         dismissButton = { TextButton(onClick = { confirmReset = false }, enabled = !busy) { Text("Peruuta") } })
 }
