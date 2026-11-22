@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skillit.fi/schemas/attempt.v1.json",
+  "title": "Skillit local attempt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "eventId",
+    "packId",
+    "packVersion",
+    "itemId",
+    "family",
+    "params",
+    "answer",
+    "correct",
+    "retryNumber",
+    "hintUsed",
+    "inputMethod",
+    "recognizerConfidence",
+    "errorClass",
+    "timestamp"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "eventId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "packId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+    },
+    "packVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "itemId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+    },
+    "family": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+    },
+    "params": {
+      "type": "object",
+      "maxProperties": 20,
+      "description": "Opaque pack generator parameters, copied unchanged; runtime limits serialized text to 1000 characters and nesting to 32."
+    },
+    "answer": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "id"
+          ],
+          "properties": {
+            "type": {
+              "const": "choice"
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "values"
+          ],
+          "properties": {
+            "type": {
+              "const": "cells"
+            },
+            "values": {
+              "type": "object",
+              "minProperties": 1,
+              "maxProperties": 400,
+              "propertyNames": {
+                "minLength": 1,
+                "maxLength": 32
+              },
+              "additionalProperties": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": -2147483648,
+                "maximum": 2147483647
+              }
+            }
+          }
+        }
+      ]
+    },
+    "correct": {
+      "type": "boolean"
+    },
+    "retryNumber": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "hintUsed": {
+      "type": "boolean"
+    },
+    "inputMethod": {
+      "enum": [
+        "pen",
+        "pad"
+      ]
+    },
+    "recognizerConfidence": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "errorClass": {
+      "enum": [
+        null,
+        "wrong-table-fact",
+        "dropped-carry",
+        "place-value-shift",
+        "misread-digit",
+        "other"
+      ]
+    },
+    "timestamp": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9223372036854775807,
+      "description": "UTC Unix epoch milliseconds."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "correct": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "errorClass": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "errorClass": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "inputMethod": {
+            "const": "pad"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "recognizerConfidence": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ]
+}
