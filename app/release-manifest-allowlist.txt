@@ -1,0 +1,29 @@
+# Merged RELEASE manifest allowlist, checked by scripts/check-release-privacy.py in CI.
+# Reviewed for #26 (security review F1/F2/F4). Changing this file needs a privacy review (#30).
+# INTERNET: one-time ML Kit model download only. ACCESS_NETWORK_STATE, WAKE_LOCK, WorkManager and
+# datatransport components come from ML Kit; the datatransport upload backend (CCT) is removed.
+activity com.google.android.gms.common.api.GoogleApiActivity
+activity fi.skillit.MainActivity
+permission android.permission.ACCESS_NETWORK_STATE
+permission android.permission.INTERNET
+permission android.permission.WAKE_LOCK
+permission fi.skillit.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+provider androidx.startup.InitializationProvider
+provider com.google.mlkit.common.internal.MlKitInitProvider
+receiver androidx.profileinstaller.ProfileInstallReceiver
+receiver androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryChargingProxy
+receiver androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryNotLowProxy
+receiver androidx.work.impl.background.systemalarm.ConstraintProxy$NetworkStateProxy
+receiver androidx.work.impl.background.systemalarm.ConstraintProxy$StorageNotLowProxy
+receiver androidx.work.impl.background.systemalarm.ConstraintProxyUpdateReceiver
+receiver androidx.work.impl.background.systemalarm.RescheduleReceiver
+receiver androidx.work.impl.diagnostics.DiagnosticsReceiver
+receiver androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver
+receiver com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver
+service androidx.room.MultiInstanceInvalidationService
+service androidx.work.impl.background.systemalarm.SystemAlarmService
+service androidx.work.impl.background.systemjob.SystemJobService
+service androidx.work.impl.foreground.SystemForegroundService
+service com.google.android.datatransport.runtime.backends.TransportBackendDiscovery
+service com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService
+service com.google.mlkit.common.internal.MlKitComponentDiscoveryService

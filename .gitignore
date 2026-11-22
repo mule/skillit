@@ -13,3 +13,7 @@ tmp/
 # Keep them in docs/resources/ locally; CI also runs scripts/check-no-scans.sh.
 docs/resources/
 *.scan.pdf
+
+# Ink lab handwriting samples pulled from a tablet: private, never commit (#26 security review F3)
+samples-v1.txt
+**/ink-lab/
