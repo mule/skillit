@@ -27,8 +27,11 @@ class MathGenTest {
                     "tables" -> { put("table", 2 + seed % 9); put("count", 2 + seed / 9 % 9) }
                     "tens-hundreds" -> { put("zeros", 1 + seed % 2); put("split", seed % 4 == 1) }
                     "multi-factor", "missing-factor", "order-of-ops" -> {
-                        put("digits", 1 + seed % 2)
-                        put("factorCount", (if (family == "multi-factor") 3 + seed / 2 % 2 else 2 + seed / 2 % 3))
+                        val digits = 1 + seed % 2
+                        val count = if (family == "multi-factor") 3 + seed / 2 % 2 else 2 + seed / 2 % 3
+                        put("digits", digits)
+                        put("factorCount", count)
+                        if (family != "order-of-ops") put("tensFactors", if (digits == 1) 0 else seed / 6 % (count + 1))
                     }
                     "column", "column-tens" -> {
                         val digits = 2 + seed % 2
@@ -47,6 +50,14 @@ class MathGenTest {
             assertEquals("$ref", emptyList<String>(), MathGen.problems(item))
             assertEquals(item.exercise.answer, MathGen.recomputers.getValue(family).recompute(ref))
             oracle(item)
+            assertTrue(MathGen.problems(item.exercise).isEmpty())
+            assertFalse(item.exercise.prompt.contains('*'))
+            assertFalse(item.exercise.prompt.contains('/'))
+            if (family in setOf("multi-factor", "missing-factor", "order-of-ops")) {
+                assertTrue(Expression.parse(requireNotNull(item.exercise.expression)).steps().all { it in 0..10_000 })
+                if (family != "order-of-ops") assertEquals(params.getValue("tensFactors").jsonPrimitive.int,
+                    item.factors.count { it % 10 == 0 })
+            }
             if (family == "column" || family == "column-tens") {
                 assertEquals(params.getValue("carries").jsonPrimitive.int, item.carries)
                 assertEquals(params.getValue("overflow").jsonPrimitive.boolean, item.overflow)
@@ -129,7 +140,8 @@ class MathGenTest {
         }
         if (ex.generator!!.family == "multi-factor") {
             assertEquals(item.factors.sorted(), item.smartOrder.sorted())
-            assertEquals(10 * if (item.smartOrder[0] >= 10) 100 else 1, item.smartOrder[0] * item.smartOrder[1])
+            assertTrue(item.smartOrder.take(2) in listOf(listOf(2, 5), listOf(4, 25), listOf(2, 10),
+                listOf(4, 10), listOf(20, 10), listOf(10, 10)))
         }
     }
 
@@ -194,7 +206,7 @@ class MathGenTest {
     @Test fun generatedSampleRoundTripsAndMatchesCommittedArtifact() {
         val pack = MathGen.samplePack()
         val json = ContentPack.encode(pack)
-        assertEquals(pack, ContentPack.parse(json, MathGen.recomputers))
+        assertEquals(pack, MathGen.parsePack(json))
         assertEquals(json + "\n", File(System.getProperty("mathgenSample")).readText())
         val schemaFile = File(System.getProperty("mathgenSample")).parentFile.parentFile.resolve("pack.v1.json")
         val schema = com.networknt.schema.JsonSchemaFactory.getInstance(com.networknt.schema.SpecVersion.VersionFlag.V202012)
@@ -205,6 +217,52 @@ class MathGenTest {
         val tampered = ex.copy(answer = AnswerSpec.Numeric((ex.answer as AnswerSpec.Numeric).expected + 1))
         val bad = pack.copy(units = listOf(pack.units[0].copy(exercises = listOf(tampered))))
         rejects { ContentPack.parse(ContentPack.encode(bad), MathGen.recomputers) }
+    }
+
+    @Test fun languagePassMayChangeWordingButNotNumbersOrLetters() {
+        MathGen.families.forEach { family ->
+            val ex = MathGen.generate(GeneratorRef(family, seed = 42)).exercise
+            assertTrue(MathGen.problems(ex.copy(prompt = "Harjoittele: ${ex.prompt}")).isEmpty())
+            val changed = Regex("[0-9]+").replaceFirst(ex.prompt, "9999")
+            if (changed != ex.prompt) assertTrue(family, MathGen.problems(ex.copy(prompt = changed)).isNotEmpty())
+        }
+        val code = MathGen.generate(GeneratorRef("letter-code", seed = 42)).exercise
+        val badCode = code.copy(prompt = code.prompt.replace(Regex("=[A-ZÄÖ]"), "=X"))
+        assertTrue(MathGen.problems(badCode).any { it.contains("letter-code") })
+        assertTrue(MathGen.problems(code.copy(prompt = code.prompt.replace(Regex("=[A-ZÄÖ]"), "=XX"))).isNotEmpty())
+        val pack = MathGen.samplePack()
+        val unit = pack.units.single()
+        val ex = unit.exercises.first { it.generator!!.family == "multiples-of" }
+        val bad = ex.copy(prompt = ex.prompt.replace(Regex("[0-9]+"), "9999"))
+        val tampered = pack.copy(units = listOf(unit.copy(exercises = listOf(bad))))
+        // The new builder path must reject a prompt even though the engine's answer check accepts it.
+        val json = ContentPack.encode(tampered)
+        ContentPack.parse(json, MathGen.recomputers)
+        rejects { MathGen.parsePack(json) }
+    }
+
+    @Test fun mixedWorkbookExamplesAndSmartPairsAreReachable() {
+        val missing = (0L..500L).map { seed -> MathGen.generate(GeneratorRef("missing-factor",
+            buildJsonObject { put("digits", 2); put("tensFactors", 1) }, seed)) }
+        assertTrue(missing.any { it.exercise.prompt.contains("40 · ☐ = 360") })
+        val multi = (0L..1000L).map { seed -> MathGen.generate(GeneratorRef("multi-factor",
+            buildJsonObject { put("digits", 2); put("tensFactors", 2) }, seed)) }
+        assertTrue(multi.any { it.factors.sorted() == listOf(4, 10, 20) })
+        // Adjacent small java.util.Random seeds have correlated first draws; spread the seed space.
+        val pairs = (0L..100L).map { seed -> MathGen.generate(GeneratorRef("multi-factor",
+            buildJsonObject { put("digits", 2); put("tensFactors", 0) }, seed * 1_000_003L)).smartOrder.take(2) }.toSet()
+        assertTrue(listOf(2, 5) in pairs)
+        assertTrue(listOf(4, 25) in pairs)
+        assertTrue(multi.any { 10 in it.smartOrder.take(2) })
+        rejects { MathGen.generate(GeneratorRef("multi-factor", buildJsonObject { put("tensFactors", 1) }, 0)) }
+    }
+
+    @Test fun customWordPromptsUseFinnishOperators() {
+        val ex = MathGen.generate(GeneratorRef("word", buildJsonObject {
+            put("text", "Laske {count} * {amount} / 2.")
+        }, 42)).exercise
+        assertTrue('·' in ex.prompt && ':' in ex.prompt)
+        assertTrue('*' !in ex.prompt && '/' !in ex.prompt)
     }
 
     @Test fun metadataAndPromptTamperingAreRejected() {

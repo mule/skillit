@@ -11,7 +11,7 @@ val ref = GeneratorRef("column", buildJsonObject {
 }, seed = 42)
 val generated = MathGen.generate(ref)
 check(MathGen.problems(generated).isEmpty())
-val validated = ContentPack.parse(packJson, MathGen.recomputers)
+val validated = MathGen.parsePack(packJson) // builder/import validation includes prompt numbers
 ```
 
 Every family accepts a signed 64-bit seed, including negative values. The v1
@@ -29,18 +29,25 @@ Knobs are family-specific; unsupported knobs are rejected rather than ignored.
 | --- | --- | --- |
 | `tables` | `table`: 2–10 (seeded), `count`: 2–10 (5) | Skip-count strip, multipliers within 1–10 |
 | `tens-hundreds` (tensHundreds) | `zeros`: 1–2 (1), `split`: boolean (false; requires zeros=2) | Product; split puts a zero on each factor |
-| `multi-factor` (multiFactor) | `digits`: 1–2 (1), `factorCount`: 3–4 (3) | Product plus a suggested `smartOrder`, pairing 2 and 5 (or 20 and 50) |
+| `multi-factor` (multiFactor) | `digits`: 1–2 (1), `factorCount`: 3–4 (3), `tensFactors`: 0–count (0 for digits=1; 1 for digits=2) | Product plus varied `smartOrder` pairs: 2·5, 4·25, and factors of ten |
 | `column` | `digits`: 2–3 (3), `carries`: 0–digits−1 (1), `overflow`: boolean (false) | Full engine column layout |
 | `column-tens` (columnTens) | Same as column | Two/three-digit number × 20–90 |
 | `order-of-ops` (orderOfOps) | `digits`: 1–2 (1), `factorCount`: 2–4 (2) | `Expression.steps()` in Finnish school order, including parentheses |
-| `missing-factor` (missingFactor) | `digits`: 1–2 (1), `factorCount`: 2–4 (2) | Exactly one missing positive factor |
+| `missing-factor` (missingFactor) | `digits`: 1–2 (1), `factorCount`: 2–4 (2), `tensFactors`: 0–count (0 for digits=1; 1 for digits=2) | Exactly one missing positive factor |
 | `product-grid` (productGrid) | `size`: 2–5 (3) | Unique row/column headers and all product blanks |
 | `multiples-of` (multiplesOf) | `maxTable`: 3–10 (10) | One 1/0 blank per table 2–maxTable |
 | `word` | `digits`: 1–2 (1), `template`: 0–2 (seeded); optional `slots`, `text`, `expression` below | Computed integer answer |
 | `letter-code` (letterCode) | `word`: 0–3 (seeded): KISSA, KOIRA, SAUNA, TÄHTI | Products and an unambiguous product→letter key; `rewardWord` metadata |
 
-`digits=2` in multi-factor/missing-factor means multiples of ten. Order-of-ops
-uses two-digit operands 10–20 to keep intermediate results suitable for grade 4.
+Multi-factor, missing-factor and order-of-ops cap every product and intermediate
+at **10,000**. `digits` is a maximum, not a guarantee that every operand has that
+many digits. In multi-factor/missing-factor, `tensFactors` selects exactly how many
+factors are multiples of ten (10–90); positive tensFactors requires digits=2.
+Other factors are 2–9, with the extra smart pair 4·25 available for digits=2.
+For example, digits=2/tensFactors=1 can generate 40·☐=360, and
+factorCount=3/tensFactors=2 can generate 20·4·10. Order-of-ops operands are
+2–9 or 2–20, budgeted so parentheses, intermediate products and final sums stay
+within the cap. All draws preserve enough budget for remaining factors.
 Not every family has a carry or factor-count knob: these only apply where the
 answer format uses them.
 
@@ -83,17 +90,30 @@ so no blank requires guessing. Letter-code uses the existing numeric answer cell
 the UI can reveal `rewardWord` after solving the products.
 
 `MathGen.problems(item)` checks the entire generated exercise and metadata.
-The registry intentionally recomputes **answers** only, as required by the engine
-contract: pack authors may replace prompts, hints and explanations after review.
+For pack-backed items, use `MathGen.problems(PackExercise)` or the builder/import
+entry point **`MathGen.parsePack(text)`**. The latter runs engine validation and
+checks every generator-backed prompt. The sample writer uses this path before
+writing output; #23 must use the same path before preview/publication.
+
+The language pass may reword text, **never numbers**: prompt integer tokens must
+remain unchanged and in the same order (including repeated values). Letter-code
+`n=L` pairs must also remain unchanged. Added/replaced/deleted numbers or changed
+letters reject the pack. Prompts display Finnish `·` and `:`; stored arithmetic
+expressions may retain ASCII `*` and `/`. Parent review still checks prose meaning,
+operators/grouping and wording: token validation cannot understand arbitrary Finnish.
+The registry alone checks answers and `ContentPack.parse(..., recomputers)` alone
+does not include these extra prompt checks. Hints and explanations may be reworded
+after review.
 No XP, retries, existing saves, or music/nature runtime behavior is modified.
 
 ## Checks and sample
 
 `MathGen.samplePack()` produces one item per family. Regenerate the committed
-sample with `./gradlew :mathgen:samplePack --max-workers=2`. The file lives at
+sample with `flock /home/japurane/repos/skillit/.git/gradle-build.lock ./gradlew --no-daemon --max-workers=2 :mathgen:samplePack`. The file lives at
 `content-schema/examples/mathgen-sample.v1.json` and requires `MathGen.recomputers`
-when parsing. `samplePack` is a developer-only I/O entry point; generators and
-recomputers perform no I/O.
+when using the engine directly; prefer `MathGen.parsePack` for import/build paths.
+`samplePack` is a test-source developer entry point, excluded from the runtime jar
+and APK. Generators and recomputers perform no I/O.
 
 Tests cover 10,000 seeds per family (110,000 total), varied supported difficulty
 settings, independent arithmetic/layout/grid/code checks, strict params, full

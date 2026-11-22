@@ -108,11 +108,24 @@ object MathGen {
             "multi-factor" -> {
                 val count = p.int("factorCount", 3..4, 3)
                 val digits = p.int("digits", 1..2, 1)
-                val scale = if (digits == 1) 1 else 10
-                factors = (listOf(2 * scale, 5 * scale) + List(count - 2) { draw(2, 9) * scale }).shuffled(rng)
-                smart = listOf(2 * scale, 5 * scale) + factors.toMutableList().apply { remove(2 * scale); remove(5 * scale) }
+                val tens = p.int("tensFactors", 0..count, if (digits == 1) 0 else 1)
+                require(digits == 2 || tens == 0) { "tensFactors needs digits=2" }
+                val pairs = listOf(listOf(2, 5), listOf(4, 25), listOf(2, 10), listOf(4, 10), listOf(20, 10), listOf(10, 10))
+                    .filter { pair ->
+                        val pairTens = pair.count { it % 10 == 0 }
+                        val remainingTens = tens - pairTens
+                        val remainingOnes = count - 2 - remainingTens
+                        (digits == 2 || pair.all { it < 10 }) && remainingTens >= 0 && remainingOnes >= 0 &&
+                            pair.reduce(Int::times) * minimumProduct(remainingTens, remainingOnes) <= MAX_PRODUCT
+                    }
+                require(pairs.isNotEmpty()) { "Impossible smart-order profile" }
+                val pair = pairs[rng.nextInt(pairs.size)]
+                val restTens = tens - pair.count { it % 10 == 0 }
+                val rest = boundedFactors(count - 2, restTens, MAX_PRODUCT / pair.reduce(Int::times), rng)
+                smart = pair + rest
+                factors = smart.shuffled(rng)
                 prompt = "Laske ${factors.joinToString(" · ")}. Valitse helppo laskujärjestys."
-                hint = "Kerro ensin ${2 * scale} ja ${5 * scale}."
+                hint = "Kerro ensin ${pair[0]} ja ${pair[1]}."
                 answer = numeric(factors.joinToString(" * "))
             }
             "column", "column-tens" -> {
@@ -133,18 +146,27 @@ object MathGen {
             "order-of-ops" -> {
                 val count = p.int("factorCount", 2..4, 2)
                 val digits = p.int("digits", 1..2, 1)
-                val min = if (digits == 1) 2 else 10
                 val max = if (digits == 1) 9 else 20
-                factors = List(count) { draw(min, max) }
-                expression = "${draw(1, 9)} + " + factors.dropLast(1).joinToString(" * ") + " * (${factors.last()} + ${draw(1, 9)})"
+                val outside = draw(1, 9)
+                val inside = draw(1, 9)
+                val last = draw(2, max)
+                var budget = (MAX_PRODUCT - outside) / (last + inside)
+                val prefix = List(count - 1) { index ->
+                    val remainingMinimum = minimumProduct(0, count - index - 2)
+                    draw(2, minOf(max, budget / remainingMinimum)).also { budget /= it }
+                }
+                factors = prefix + last
+                expression = "$outside + " + prefix.joinToString(" * ") + " * ($last + $inside)"
                 answer = AnswerSpec.Steps(Expression.parse(expression).steps())
-                prompt = "Laske vaiheittain $expression."
+                prompt = "Laske vaiheittain ${display(expression)}."
                 hint = "Laske ensin sulut, sitten kertolaskut ja lopuksi yhteenlaskut."
             }
             "missing-factor" -> {
                 val count = p.int("factorCount", 2..4, 2)
                 val digits = p.int("digits", 1..2, 1)
-                factors = List(count) { draw(2, 9) * if (digits == 1) 1 else 10 }
+                val tens = p.int("tensFactors", 0..count, if (digits == 1) 0 else 1)
+                require(digits == 2 || tens == 0) { "tensFactors needs digits=2" }
+                factors = boundedFactors(count, tens, MAX_PRODUCT, rng).shuffled(rng)
                 val blank = rng.nextInt(count)
                 answer = AnswerSpec.MissingFactor(factors.mapIndexed { i, n -> if (i == blank) null else n }, factors.reduce(Int::times))
                 expression = factors.joinToString(" * ")
@@ -201,6 +223,7 @@ object MathGen {
         }
         p.finish()
         answer.validate()
+        prompt = display(prompt)
         require(prompt.length <= 500) { "Rendered prompt too long" }
         val paramsHash = java.security.MessageDigest.getInstance("SHA-256")
             .digest(canonical(ref.params).toByteArray(Charsets.UTF_8)).take(6).joinToString("") { "%02x".format(it) }
@@ -218,9 +241,61 @@ object MathGen {
         }
     } catch (e: IllegalArgumentException) { listOf(e.message ?: "Invalid generator") }
 
+    /**
+     * Checks a pack item after the Finnish language pass. Wording may change; the sequence of
+     * integer tokens (including duplicates) and letter-code number=letter pairs may not change.
+     * This supplements the engine's answer-only recomputation without trusting prose as arithmetic.
+     */
+    fun problems(exercise: PackExercise): List<String> = buildList {
+        addAll(exercise.problems(recomputers))
+        val ref = exercise.generator ?: return@buildList
+        val regenerated = try { generate(ref).exercise } catch (e: IllegalArgumentException) {
+            add(e.message ?: "Invalid generator"); return@buildList
+        }
+        if (integers(regenerated.prompt) != integers(exercise.prompt)) add("Prompt numbers differ from generator")
+        if (ref.family == "letter-code" && letterPairs(regenerated.prompt) != letterPairs(exercise.prompt))
+            add("Prompt letter-code pairs differ from generator")
+        if ('*' in exercise.prompt || '/' in exercise.prompt) add("Prompt must use · and :")
+    }
+
+    /** Pack-builder/import entry point: engine answer validation plus generator-bound prompts. */
+    fun parsePack(text: String): ContentPack = ContentPack.parse(text, recomputers).also { pack ->
+        val problems = pack.units.flatMap { unit -> unit.exercises.flatMap { exercise ->
+            problems(exercise).map { "${unit.id}/${exercise.id}: $it" }
+        } }
+        require(problems.isEmpty()) { problems.joinToString("\n") }
+    }
+
+    private fun integers(text: String): List<String> = Regex("-?[0-9]+").findAll(text).map { it.value }.toList()
+    private fun letterPairs(text: String): List<Pair<String, String>> =
+        Regex("""([0-9]+)\s*=\s*([A-ZÄÖÅa-zäöå])(?![\p{L}\p{N}])""").findAll(text)
+            .map { it.groupValues[1] to it.groupValues[2] }.toList()
+
     fun samplePack(): ContentPack = ContentPack(1, "mathgen-sample", "math", 4, 1,
         "Kertolaskua – generoitu esimerkkipaketti", units = listOf(PackUnit("chapter-2", "Kertolaskua",
             exercises = families.mapIndexed { i, family -> generate(GeneratorRef(family, seed = i.toLong())).exercise })))
+
+    const val MAX_PRODUCT = 10_000
+
+    private fun minimumProduct(tens: Int, ones: Int): Int =
+        (List(tens) { 10 } + List(ones) { 2 }).fold(1, Int::times)
+
+    /** Budget each draw against the smallest possible remaining factors; no rejection sampling. */
+    private fun boundedFactors(count: Int, tens: Int, limit: Int, rng: Random): List<Int> {
+        require(tens in 0..count && minimumProduct(tens, count - tens) <= limit) { "Impossible product profile" }
+        var budget = limit
+        return List(count) { index ->
+            val isTens = index < tens
+            val remainingTens = maxOf(0, tens - index - 1)
+            val remainingOnes = count - index - 1 - remainingTens
+            val scale = if (isTens) 10 else 1
+            val min = if (isTens) 1 else 2
+            val max = minOf(9, budget / minimumProduct(remainingTens, remainingOnes) / scale)
+            (min + rng.nextInt(max - min + 1)).times(scale).also { budget /= it }
+        }
+    }
+
+    private fun display(text: String): String = text.replace('*', '·').replace('/', ':')
 
     private class Params(private val values: JsonObject) {
         private val used = mutableSetOf<String>()

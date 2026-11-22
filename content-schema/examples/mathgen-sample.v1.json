@@ -99,14 +99,14 @@
                 },
                 {
                     "id": "multi-factor-2-44136fa355b3",
-                    "prompt": "Laske 7 · 5 · 2. Valitse helppo laskujärjestys.",
+                    "prompt": "Laske 5 · 2 · 4. Valitse helppo laskujärjestys.",
                     "hint": "Kerro ensin 2 ja 5.",
                     "explanation": "Oikeat vastaukset saat laskemalla vihjeen mukaan.",
                     "answer": {
                         "type": "numeric",
-                        "expected": 70
+                        "expected": 40
                     },
-                    "expression": "7 * 5 * 2",
+                    "expression": "5 * 2 * 4",
                     "generator": {
                         "family": "multi-factor",
                         "params": {},
@@ -261,19 +261,19 @@
                 },
                 {
                     "id": "order-of-ops-5-44136fa355b3",
-                    "prompt": "Laske vaiheittain 9 + 7 * (3 + 6).",
+                    "prompt": "Laske vaiheittain 9 + 6 · (2 + 2).",
                     "hint": "Laske ensin sulut, sitten kertolaskut ja lopuksi yhteenlaskut.",
                     "explanation": "Oikeat vastaukset saat laskemalla vihjeen mukaan.",
                     "answer": {
                         "type": "steps",
                         "values": [
-                            9,
-                            63,
-                            72
+                            4,
+                            24,
+                            33
                         ],
                         "labels": []
                     },
-                    "expression": "9 + 7 * (3 + 6)",
+                    "expression": "9 + 6 * (2 + 2)",
                     "generator": {
                         "family": "order-of-ops",
                         "params": {},
@@ -282,14 +282,14 @@
                 },
                 {
                     "id": "missing-factor-6-44136fa355b3",
-                    "prompt": "Mikä luku puuttuu? 7 · ☐ = 28",
+                    "prompt": "Mikä luku puuttuu? ☐ · 4 = 28",
                     "hint": "Jaa tulo tunnettujen tekijöiden tulolla.",
                     "explanation": "Oikeat vastaukset saat laskemalla vihjeen mukaan.",
                     "answer": {
                         "type": "missing-factor",
                         "factors": [
-                            7,
-                            null
+                            null,
+                            4
                         ],
                         "product": 28
                     },

@@ -11,7 +11,8 @@ tasks.test {
     systemProperty("mathgenSample", sample.absolutePath)
 }
 tasks.register<JavaExec>("samplePack") {
-    classpath = sourceSets.main.get().runtimeClasspath
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
     mainClass.set("fi.skillit.mathgen.SamplePackKt")
     args(rootProject.file("content-schema/examples/mathgen-sample.v1.json").absolutePath)
 }
