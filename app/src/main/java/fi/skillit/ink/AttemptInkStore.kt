@@ -16,7 +16,9 @@ data class CellInk(val strokes: List<InkStroke>, val digit: Int?)
  * Only aggregate legibility scores may ever be synced (epic #31), never these files.
  *
  * One file per attempt, written to a temporary file and renamed, so a full disk can't leave a half file.
- * [prune] keeps storage bounded; #28 decides the retention.
+ * [prune] keeps storage bounded: call `prune(KEEP_ATTEMPTS)` after saving. The handwriting coach (#28) keeps the
+ * long-term legibility trend as aggregates (`fi.skillit.coach.LegibilityStore`), so raw strokes are only needed
+ * for recent attempts.
  */
 class AttemptInkStore(
     private val dir: File,
@@ -65,6 +67,9 @@ class AttemptInkStore(
 
     companion object {
         private const val EXT = ".ink"
+
+        /** Retention (#28): strokes of the newest 200 answer attempts, roughly two weeks of daily play. */
+        const val KEEP_ATTEMPTS = 200
 
         /**
          * `v1<TAB>base64url(key)<TAB>savedAtMs`, then one line per cell: `cell<TAB>digit-or-empty<TAB>strokes`
