@@ -6,6 +6,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import fi.skillit.music.*
 import fi.skillit.nature.NatureScreen
+import fi.skillit.math.ui.MathEnvironment
+import fi.skillit.math.ui.MathScreen
+import androidx.compose.ui.platform.LocalContext
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
@@ -52,7 +55,7 @@ fun SkillitTheme(content: @Composable () -> Unit) {
 }
 
 @Composable
-fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null) {
+fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null, math: MathEnvironment? = null) {
     var progress by remember { mutableStateOf<SavedProgress?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
@@ -61,6 +64,9 @@ fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null) {
     var practiceLevel by rememberSaveable { mutableStateOf(-1) }
     var rhythm by rememberSaveable { mutableStateOf(false) }
     var nature by rememberSaveable { mutableStateOf(false) }
+    var mathOpen by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
+    val mathEnv = remember(math) { math ?: MathEnvironment.android(context) }
     var settings by rememberSaveable { mutableStateOf(false) }
     var confirmReset by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -72,7 +78,7 @@ fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null) {
         onDispose { lifecycle.removeObserver(observer); audio.close() }
     }
     LaunchedEffect(progress?.muted, progress?.volume) { audio.configure(progress?.muted ?: true, progress?.volume ?: .6f) }
-    LaunchedEffect(inGame, rhythm, nature, settings, progress?.events?.size) { audio.stop() }
+    LaunchedEffect(inGame, rhythm, nature, mathOpen, settings, progress?.events?.size) { audio.stop() }
     val adventure = remember(progress) { progress?.let { ExerciseSession.restore(MusicPack.questions, it.events) } }
     val session = remember(progress, practiceLevel) { progress?.let {
         if (practiceLevel < 0) adventure else ExerciseSession.restore(Adventure.questions(practiceLevel), it.practice[practiceLevel].orEmpty())
@@ -109,11 +115,12 @@ fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null) {
             else saved.copy(practice = saved.practice + (practiceLevel to updated.events)))
     }
     BackHandler(enabled = settings || confirmReset ||
-        (progress != null && (nature || rhythm || (inGame && progress?.started == true)))) {
+        (progress != null && (nature || mathOpen || rhythm || (inGame && progress?.started == true)))) {
         when {
             confirmReset -> confirmReset = false
             settings -> settings = false
             nature -> nature = false
+            mathOpen -> mathOpen = false
             else -> {
                 audio.stop()
                 rhythm = false
@@ -124,7 +131,7 @@ fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null) {
     LaunchedEffect(repository) { load() }
     Surface(Modifier.fillMaxSize()) {
         val scroll = rememberScrollState()
-        LaunchedEffect(session?.current?.token, progress?.started == true && inGame, rhythm, nature, practiceLevel) {
+        LaunchedEffect(session?.current?.token, progress?.started == true && inGame, rhythm, nature, mathOpen, practiceLevel) {
             scroll.scrollTo(0)
         }
         Column(Modifier.safeDrawingPadding().fillMaxSize().verticalScroll(scroll).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -148,6 +155,7 @@ fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null) {
                     nature -> NatureScreen(onQuestionChanged = { scope.launch { scroll.scrollTo(0) } }) {
                         nature = false; inGame = false
                     }
+                    mathOpen -> MathScreen(mathEnv) { mathOpen = false; inGame = false }
                     rhythm -> RhythmScreen(audio, settings || confirmReset) { rhythm = false; inGame = false }
                     !saved.started || !inGame -> {
                         Text("Nuottiseikkailu", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.semantics { heading() })
@@ -169,6 +177,7 @@ fun SkillitApp(repository: ProgressRepository, output: PcmOutput? = null) {
                         }
                         Button(onClick = { rhythm = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Rytmipaja") }
                         Button(onClick = { nature = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Niittyetsivä · luontoretki") }
+                        Button(onClick = { mathOpen = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Kertolaskuseikkailu") }
                         SoundLab(audio, saved.muted || saved.volume == 0f)
                     }
                     session != null && session.complete -> {
