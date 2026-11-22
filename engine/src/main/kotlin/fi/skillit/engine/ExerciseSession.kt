@@ -3,8 +3,9 @@ package fi.skillit.engine
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
+/** [value] is the number a math choice stands for, so packs can check `correctId`; music and nature leave it null. */
 @Serializable
-data class Choice(val id: String, val label: String)
+data class Choice(val id: String, val label: String, val value: Int? = null)
 
 /**
  * One exercise. Music builds it from [choices] and [correctId] exactly as before; other subjects pass

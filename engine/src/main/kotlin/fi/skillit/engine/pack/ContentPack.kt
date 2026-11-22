@@ -1,6 +1,7 @@
 package fi.skillit.engine.pack
 
 import fi.skillit.engine.AnswerSpec
+import fi.skillit.engine.PackLimits
 import fi.skillit.engine.Question
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -27,6 +28,9 @@ data class ContentPack(
         if (schema != SCHEMA) add("schema must be $SCHEMA")
         if (!ID.matches(id)) add("pack id '$id' is invalid")
         if (subject.isBlank() || title.isBlank()) add("subject and title are required")
+        if (subject.length > PackLimits.SUBJECT || title.length > PackLimits.TITLE) add("subject or title too long")
+        if (units.size > PackLimits.UNITS) add("more than ${PackLimits.UNITS} units")
+        sourceRef?.problems()?.let(::addAll)
         if (grade !in 1..12 || version < 1) add("grade or version out of range")
         if (units.isEmpty()) add("pack has no units")
         if (units.map { it.id }.distinct().size != units.size) add("unit ids must be unique")
@@ -34,7 +38,9 @@ data class ContentPack(
         exerciseIds.groupBy { it }.filterValues { it.size > 1 }.keys.forEach { add("exercise id '$it' is used twice") }
         units.forEach { unit ->
             if (!ID.matches(unit.id)) add("unit id '${unit.id}' is invalid")
-            if (unit.exercises.isEmpty() || unit.exercises.size > 100) add("unit ${unit.id} needs 1..100 exercises")
+            if (unit.title.isBlank() || unit.title.length > PackLimits.TITLE) add("unit ${unit.id} title is empty or too long")
+            unit.sourceRef?.problems()?.forEach { add("${unit.id}: $it") }
+            if (unit.exercises.isEmpty() || unit.exercises.size > PackLimits.EXERCISES) add("unit ${unit.id} needs 1..${PackLimits.EXERCISES} exercises")
             unit.exercises.forEach { exercise -> exercise.problems(generators).forEach { add("${unit.id}/${exercise.id}: $it") } }
         }
     }
@@ -73,7 +79,12 @@ data class ContentPack(
 
 /** Where in the workbook the content comes from: chapter and pages only, never the page content. */
 @Serializable
-data class SourceRef(val chapter: Int, val lesson: Int? = null, val pages: List<Int> = emptyList())
+data class SourceRef(val chapter: Int, val lesson: Int? = null, val pages: List<Int> = emptyList()) {
+    fun problems(): List<String> = buildList {
+        if (chapter < 1 || (lesson != null && lesson < 1) || pages.any { it < 1 }) add("sourceRef numbers must be positive")
+        if (pages.size > PackLimits.PAGES) add("sourceRef lists more than ${PackLimits.PAGES} pages")
+    }
+}
 
 @Serializable
 data class PackUnit(
@@ -100,9 +111,13 @@ data class PackExercise(
     fun problems(generators: Map<String, AnswerRecomputer> = emptyMap()): List<String> = buildList {
         if (!ContentPack.ID.matches(id)) add("exercise id is invalid")
         if (prompt.isBlank() || hint.isBlank() || explanation.isBlank()) add("prompt, hint and explanation are required")
-        val blanksCarryExpressions = answer is AnswerSpec.FillTable && answer.blanks.all { it.expression != null }
-        if (expression.isNullOrBlank() && generator == null && !blanksCarryExpressions) add("needs an expression or a generator")
-        generator?.let { if (!ContentPack.ID.matches(it.family)) add("generator family is invalid") }
+        if (prompt.length > PackLimits.PROMPT || hint.length > PackLimits.HINT || explanation.length > PackLimits.EXPLANATION) {
+            add("prompt, hint or explanation too long")
+        }
+        generator?.let {
+            if (!ContentPack.ID.matches(it.family)) add("generator family is invalid")
+            if (it.params.size > PackLimits.PARAMS || it.params.toString().length > PackLimits.PARAMS_JSON) add("generator params too large")
+        }
         try { answer.validate() } catch (e: IllegalArgumentException) { add("answer: ${e.message}"); return@buildList }
         addAll(AnswerCheck.problems(this@PackExercise, generators))
     }

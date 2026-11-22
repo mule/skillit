@@ -7,9 +7,15 @@ Kotlin model: `engine/src/main/kotlin/fi/skillit/engine/pack/ContentPack.kt` (ko
 - **Units are levels.** `ContentPack.questions(unitId)` gives questions for an `ExerciseSession`; the unit index is the level.
 - **Answer types** (`answer.type`): `choice`, `numeric`, `column-multiplication`, `steps`, `fill-table`, `missing-factor`.
   Non-choice answers are checked per cell, in solving order, so the UI can highlight the first wrong cell.
-- **Answers are recomputed, never trusted.** Each exercise has an `expression` or a `generator {family, params, seed}`
-  (a table may instead give an `expression` per blank). `ContentPack.parse` re-derives every stored value and rejects
-  the pack if one disagrees. A generator-only exercise needs a registered `AnswerRecomputer` (from `mathgen`, #21).
+- **Answers are recomputed, never trusted.** An answer counts as checked only when
+  - the exercise `expression` recomputes it (for `choice`, every choice carries a `value` and exactly one equals the
+    result, which must be `correctId`; `steps` must equal the evaluation order), or
+  - each `fill-table` blank has its own `expression` (a table may not use an exercise-level expression), or
+  - a registered `AnswerRecomputer` (from `mathgen`, #21) ran and rebuilt exactly the stored answer.
+  An unknown generator family always rejects the pack. `ContentPack.parse` rejects the pack on any mismatch.
+- **Expressions** use only ASCII digits, `+ - * / ( )`, `×`, `·`, `:` and ASCII spaces (at most 200 characters, 16 nested parentheses).
+- **Size limits** (`PackLimits`, mirrored in the schema): titles 200, prompt 500, hint and explanation 1000 characters;
+  50 units, 100 exercises per unit, 10 choices, 20×20 tables, 200 digit cells, 20 generator params (1000 chars as JSON, model only).
 - **`sourceRef` holds chapter, lesson and page numbers only**: never page text, scans or photos.
 - Column multiplication cell ids: `p{row}.{col}` partial digit, `c{row}.{col}` carry, `s{col}` sum carry,
   `r{col}` result digit (column 0 = ones). `AnswerSpec.ColumnMultiplication.layout(a, b)` builds the standard layout.

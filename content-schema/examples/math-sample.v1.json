@@ -46,8 +46,7 @@
           "hint": "9 · 6 on 10 · 6 miinus 6.",
           "explanation": "9 · 6 = 54.",
           "answer": { "type": "numeric", "expected": 54 },
-          "expression": "9 * 6",
-          "generator": { "family": "times-table", "params": { "table": 9 }, "seed": 42 }
+          "expression": "9 * 6"
         }
       ]
     },
@@ -88,7 +87,7 @@
           "prompt": "Kuinka monta jalkaa on kolmella koiralla ja kahdella kanalla?",
           "hint": "Koiralla on 4 jalkaa ja kanalla 2.",
           "explanation": "3 · 4 + 2 · 2 = 12 + 4 = 16.",
-          "answer": { "type": "choice", "choices": [ { "id": "a", "label": "10" }, { "id": "b", "label": "16" }, { "id": "c", "label": "20" } ], "correctId": "b" },
+          "answer": { "type": "choice", "choices": [ { "id": "a", "label": "10", "value": 10 }, { "id": "b", "label": "16", "value": 16 }, { "id": "c", "label": "20", "value": 20 } ], "correctId": "b" },
           "expression": "3 * 4 + 2 * 2"
         }
       ]
