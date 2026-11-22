@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import fi.skillit.engine.adaptive.InputMethod
+import fi.skillit.coach.writtenDigits
 import fi.skillit.ink.*
 import kotlinx.coroutines.delay
 
@@ -76,6 +77,14 @@ class PenInput(private val recognizer: DigitRecognizer) : DigitInput {
                 }
             }
             if (state.unreadable.isNotEmpty()) Text("Kirjoita numero uudelleen.", style = MaterialTheme.typography.bodySmall)
+        }
+    }
+
+    override fun written(item: String): List<fi.skillit.coach.WrittenDigit> {
+        var offset = 0
+        // One running index over all of the item's cells, so each written digit has its own number.
+        return rows.filterKeys { it.first == item }.entries.sortedBy { it.key.second }.flatMap { (_, state) ->
+            state.writtenDigits().map { it.copy(cell = offset + it.cell) }.also { offset += state.cells }
         }
     }
 

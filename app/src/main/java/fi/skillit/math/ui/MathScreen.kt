@@ -21,6 +21,7 @@ import fi.skillit.engine.adaptive.AttemptEvent
 import fi.skillit.engine.adaptive.InputMethod
 import fi.skillit.engine.pack.PackExercise
 import fi.skillit.math.*
+import fi.skillit.coach.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -52,6 +53,8 @@ class MathEnvironment(
     val setInputMode: suspend (InputMode) -> Unit,
     val penInput: () -> DigitInput,
     val clock: () -> Long = System::currentTimeMillis,
+    /** The handwriting coach (#28): Numeropaja, the in-lesson clarity moment and the parent trend. Null = off. */
+    val coach: () -> CoachEnvironment? = { null },
 ) {
     companion object {
         fun android(context: Context): MathEnvironment {
@@ -59,6 +62,7 @@ class MathEnvironment(
             val log by lazy { AttemptLog.open(app) }
             val settings = InputModeSettings(app.inkSettingsDataStore)
             val recognizer by lazy { MlKitDigitRecognizer() }
+            val coach by lazy { CoachEnvironment(LegibilityStore.open(app), recognizer) }
             return MathEnvironment(
                 loadCourse = { withContext(Dispatchers.IO) {
                     val text = runCatching { app.assets.open(MathCourse.PACK_ASSET) }.getOrNull()
@@ -73,12 +77,13 @@ class MathEnvironment(
                 inputMode = settings.mode,
                 setInputMode = settings::setMode,
                 penInput = { PenInput(recognizer) },
+                coach = { coach },
             )
         }
     }
 }
 
-private enum class Pane { MAP, LESSON, PIN, PARENT, SET_PIN;
+private enum class Pane { MAP, LESSON, PIN, PARENT, SET_PIN, STUDIO;
     /** The parent area is open only for this foreground visit: never restored, never kept across ON_STOP. */
     val unlocked get() = this == PIN || this == PARENT || this == SET_PIN
 }
@@ -226,11 +231,13 @@ fun MathScreen(env: MathEnvironment, onScreenChanged: () -> Unit = {}, onExit: (
                     try { env.setInputMode(mode) } catch (e: CancellationException) { throw e } catch (_: Exception) { error = "Asetusta ei voitu tallentaa." }
                 } },
                 onChangePin = { pane = Pane.SET_PIN },
-                onClose = { pane = Pane.MAP })
+                onClose = { pane = Pane.MAP },
+                coach = env.coach())
+            Pane.STUDIO -> env.coach()?.let { DigitStudio(it) { pane = Pane.MAP } } ?: LaunchedEffect(Unit) { pane = Pane.MAP }
             Pane.LESSON -> if (active == null) LaunchedEffect(Unit) { pane = Pane.MAP } else {
                 val (lesson, exercises, session) = active
                 val pen = remember(lesson.plan) { env.penInput() }
-                LessonScreen(c, lesson, exercises, session, if (inputMode == InputMode.NumberPad) PadInput else pen, busy, env.clock,
+                LessonScreen(c, lesson, exercises, session, if (inputMode == InputMode.NumberPad) PadInput else pen, busy, env.clock, env.coach(),
                     onEvent = { updated, attempt -> commit(lesson, updated, attempt) },
                     onFinish = { xp, reward ->
                         val old = saved.lessons[lesson.plan.stopId]
@@ -241,6 +248,7 @@ fun MathScreen(env: MathEnvironment, onScreenChanged: () -> Unit = {}, onExit: (
             }
             else -> MathMap(c, saved, active?.first, busy,
                 onParent = { pane = Pane.PIN },
+                onStudio = if (env.coach() != null) ({ pane = Pane.STUDIO }) else null,
                 onExit = onExit) { stop ->
                 if (active?.first?.plan?.stopId == stop.id) pane = Pane.LESSON
                 else if (active != null) confirmSwitch = stop.id
@@ -277,7 +285,7 @@ fun MathScreen(env: MathEnvironment, onScreenChanged: () -> Unit = {}, onExit: (
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MathMap(course: MathCourse, progress: MathProgress, active: ActiveLesson?, busy: Boolean,
-                    onParent: () -> Unit, onExit: () -> Unit, open: (MathCourse.Stop) -> Unit) {
+                    onParent: () -> Unit, onStudio: (() -> Unit)?, onExit: () -> Unit, open: (MathCourse.Stop) -> Unit) {
     var parentHint by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
         Text("Kertolaskuseikkailu", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.weight(1f).semantics { heading() })
@@ -291,6 +299,9 @@ private fun MathMap(course: MathCourse, progress: MathProgress, active: ActiveLe
     }
     if (parentHint) Text("Vanhempi: pidä painiketta pohjassa.", modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
     Text("Kappale 2: Kertolaskua. Matematiikan pisteet: ${progress.xp} XP (erillään musiikin pisteistä).")
+    onStudio?.let {
+        OutlinedButton(onClick = it, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Numeropaja · harjoittele numeroiden kirjoittamista") }
+    }
     course.stops.forEach { stop ->
         val record = progress.lessons[stop.id]
         val isActive = active?.plan?.stopId == stop.id
@@ -316,7 +327,7 @@ private fun MathMap(course: MathCourse, progress: MathProgress, active: ActiveLe
 @Composable
 private fun LessonScreen(
     course: MathCourse, lesson: ActiveLesson, exercises: List<PackExercise>, session: ExerciseSession,
-    input: DigitInput, busy: Boolean, clock: () -> Long,
+    input: DigitInput, busy: Boolean, clock: () -> Long, coach: CoachEnvironment?,
     onEvent: (ExerciseSession, AttemptEvent?) -> Unit, onFinish: (Int, String?) -> Unit, onMap: () -> Unit,
 ) {
     val stop = course.stop(lesson.plan.stopId)
@@ -348,6 +359,11 @@ private fun LessonScreen(
         AnswerDraft(BoardKind.of(exercise)).also { d -> session.outcomes.lastOrNull { it.questionId == exercise.id }?.check?.let(d::restore) }
     }
     val feedback = session.feedback
+    // Handwriting coach (#28): measured after an answer is checked; may offer an optional clarity moment.
+    // Neither touches the session, so XP and progress depend only on the math.
+    val clarity = remember(lesson.plan) { ClarityCoach() }
+    var prompt by remember(attempt.token) { mutableStateOf<ClarityPrompt?>(null) }
+    val scope = rememberCoroutineScope()
     val previous = if (feedback == null && attempt.retry) session.outcomes.lastOrNull { it.questionId == exercise.id }?.check else null
 
     Text(stop.label, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
@@ -372,6 +388,11 @@ private fun LessonScreen(
                     gen?.params ?: JsonObject(emptyMap()), exercise.answer, answer, attempt.number, hinted, input.method,
                     confidence, clock())
                 onEvent(updated, event)
+                if (coach != null) {
+                    val written = input.written(exercise.id)
+                    prompt = clarity.afterAnswer(written)
+                    scope.launch { coach.recordAnswer(written) }
+                }
             }
         }, enabled = !busy && draft.complete, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Tarkista") }
         if (draft.values.values.any { it.pending }) Text("Luetaan käsialaa…", style = MaterialTheme.typography.bodyMedium)
@@ -385,6 +406,7 @@ private fun LessonScreen(
                 style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
             if (!feedback.correct) Text(exercise.hint)
         } }
+        if (coach != null) prompt?.let { p -> ClarityMoment(p, coach, onClose = { prompt = null }) }
         Button(onClick = { act { it.next(attempt.token) } }, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
             Text(if (session.retryIsNext) "Yritä uudelleen" else "Jatka")
         }
@@ -393,7 +415,8 @@ private fun LessonScreen(
 }
 
 @Composable
-private fun ParentArea(progress: MathProgress, busy: Boolean, inputMode: InputMode, onInput: (InputMode) -> Unit, onChangePin: () -> Unit, onClose: () -> Unit) {
+private fun ParentArea(progress: MathProgress, busy: Boolean, inputMode: InputMode, onInput: (InputMode) -> Unit, onChangePin: () -> Unit, onClose: () -> Unit,
+                       coach: CoachEnvironment? = null) {
     Text("Vanhempien alue", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.semantics { heading() })
     Text("Oletuksena lapsi kirjoittaa kynällä. Numeronäppäimet ovat varakeino.")
     InputModeSwitch(inputMode, onInput)
@@ -402,6 +425,7 @@ private fun ParentArea(progress: MathProgress, busy: Boolean, inputMode: InputMo
         Text("Viimeisimmän oppitunnin tehtävävalinta", style = MaterialTheme.typography.titleMedium)
         Text(it)
     }
+    coach?.let { LegibilityParentCard(it) }
     OutlinedButton(onClick = onChangePin, enabled = !busy, modifier = Modifier.heightIn(min = 48.dp)) { Text("Vaihda PIN-koodi") }
     Button(onClick = onClose, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Sulje vanhempien alue") }
 }

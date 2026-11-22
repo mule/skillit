@@ -67,6 +67,12 @@ interface DigitInput {
 
     @Composable
     fun Controls(focused: InputCell?, value: CellValue?, enabled: Boolean, onValue: (CellValue) -> Unit, onNext: () -> Unit)
+
+    /**
+     * The digits written for [item], with ink and recogniser confidence, for the handwriting coach (#28).
+     * Empty for the number pad, so it never offers a "write it more clearly" moment.
+     */
+    fun written(item: String): List<fi.skillit.coach.WrittenDigit> = emptyList()
 }
 
 object CellStyle {
