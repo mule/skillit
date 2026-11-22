@@ -8,15 +8,32 @@ jobs:
   scan-guard:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
       - name: Test the scan guard
         run: scripts/test-check-no-scans.sh
-      - name: No book scans under docs/
+      - name: No scans in the tree
         run: scripts/check-no-scans.sh
+      - name: No scans in any commit of this push/PR
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [[ "$EVENT" == pull_request ]]; then
+            scripts/check-no-scans.sh --range "$PR_BASE..$PR_HEAD"
+          elif [[ -z "$BEFORE" || "$BEFORE" =~ ^0+$ ]] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            # New branch (or force push over unknown history): everything not on main.
+            scripts/check-no-scans.sh --range "$GITHUB_SHA" --not origin/main
+          else
+            scripts/check-no-scans.sh --range "$BEFORE..$GITHUB_SHA"
+          fi
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

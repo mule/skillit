@@ -1,0 +1,5 @@
+# The scan guard and its allowlist keep book scans out of this public repo.
+/scripts/scan-allowlist.txt  @mule
+/scripts/check-no-scans.sh   @mule
+/scripts/hooks/              @mule
+/.github/CODEOWNERS          @mule
