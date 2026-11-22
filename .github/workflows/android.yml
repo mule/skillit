@@ -5,10 +5,48 @@ on:
 permissions:
   contents: read
 jobs:
+  scan-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - name: Test the scan guard
+        run: scripts/test-check-no-scans.sh
+      - name: No scans in the tree
+        run: scripts/check-no-scans.sh
+      - name: No scans in any commit of this push/PR
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [[ "$EVENT" == pull_request ]]; then
+            # Use the BASE branch's guard and allowlist, so a PR can't approve
+            # its own scan or weaken the guard it is checked by.
+            guard="$RUNNER_TEMP/check-no-scans.sh"
+            if git show "$PR_BASE:scripts/check-no-scans.sh" >"$guard" 2>/dev/null; then
+              chmod +x "$guard"
+            else
+              echo "::warning::Base has no scan guard yet; using this PR's guard with the base allowlist."
+              guard=scripts/check-no-scans.sh
+            fi
+            git diff "$PR_BASE" "$PR_HEAD" -- scripts/scan-allowlist.txt scripts/check-no-scans.sh scripts/hooks .github/CODEOWNERS --stat
+            git diff -U0 "$PR_BASE" "$PR_HEAD" -- scripts/scan-allowlist.txt | sed -n 's/^+\([^+].*\)$/\1/p' | sed 's/[[:space:]]*#.*//' | grep -v '^$' |
+              while IFS= read -r line; do echo "::warning file=scripts/scan-allowlist.txt::PR adds allowlist entry: $line"; done || true
+            "$guard" --policy "$PR_BASE" --range "$PR_BASE..$PR_HEAD"
+          elif [[ -z "$BEFORE" || "$BEFORE" =~ ^0+$ ]] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            # New ref, or force push over history we can't see: fail closed and
+            # check the whole history of the pushed commit (cheap for this repo).
+            scripts/check-no-scans.sh --policy "$GITHUB_SHA" --range "$GITHUB_SHA"
+          else
+            scripts/check-no-scans.sh --policy "$GITHUB_SHA" --range "$BEFORE..$GITHUB_SHA"
+          fi
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

@@ -7,3 +7,9 @@ tmp/
 .idea/
 
 .pane/
+
+# Source scans: photos/scans of copyrighted textbook and workbook pages that
+# include a child's handwriting. They must never enter this (public) repo.
+# Keep them in docs/resources/ locally; CI also runs scripts/check-no-scans.sh.
+docs/resources/
+*.scan.pdf

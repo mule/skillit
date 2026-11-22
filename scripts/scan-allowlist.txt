@@ -1,0 +1,28 @@
+# Exact repo-relative paths of image/PDF/archive files that are NOT scans.
+# One path per line; '#' starts a comment. *.scan.pdf is always rejected.
+# Changes need code-owner review (.github/CODEOWNERS).
+
+# Gradle wrapper (a zip by content, not a scan)
+gradle/wrapper/gradle-wrapper.jar
+
+# pending image-rights decision, see NV1/#19
+app/src/main/res/drawable-nodpi/nature_amiraaliperhonen.jpg
+app/src/main/res/drawable-nodpi/nature_harakankello.jpg
+app/src/main/res/drawable-nodpi/nature_heinasirkka.jpg
+app/src/main/res/drawable-nodpi/nature_hepokatti.jpg
+app/src/main/res/drawable-nodpi/nature_kastemato.jpg
+app/src/main/res/drawable-nodpi/nature_kimalainen.jpg
+app/src/main/res/drawable-nodpi/nature_kissankello.jpg
+app/src/main/res/drawable-nodpi/nature_koiranputki.jpg
+app/src/main/res/drawable-nodpi/nature_kontiainen.jpg
+app/src/main/res/drawable-nodpi/nature_leppakerttu.jpg
+app/src/main/res/drawable-nodpi/nature_maitohorsma.jpg
+app/src/main/res/drawable-nodpi/nature_niittyleinikki.jpg
+app/src/main/res/drawable-nodpi/nature_paivankakkara.jpg
+app/src/main/res/drawable-nodpi/nature_pietaryrtti.jpg
+app/src/main/res/drawable-nodpi/nature_pihasaunio.jpg
+app/src/main/res/drawable-nodpi/nature_pihatatar.jpg
+app/src/main/res/drawable-nodpi/nature_pujo.jpg
+app/src/main/res/drawable-nodpi/nature_siankarsamo.jpg
+app/src/main/res/drawable-nodpi/nature_sitruunaperhonen.jpg
+app/src/main/res/drawable-nodpi/nature_vuohenputki.jpg

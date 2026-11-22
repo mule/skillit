@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Blocks commits that would add scans/photos of source material.
+# Enable once per clone: git config core.hooksPath scripts/hooks
+exec "$(git rev-parse --show-toplevel)/scripts/check-no-scans.sh"
