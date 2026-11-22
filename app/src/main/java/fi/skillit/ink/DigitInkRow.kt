@@ -33,6 +33,12 @@ enum class CellKind(val scale: Float) { Answer(1f), Carry(0.6f) }
 class DigitRowState(val cells: Int, val kind: CellKind = CellKind.Answer) {
     init { require(cells > 0) }
     internal val ink = InkBoxesController()
+    /**
+     * The pen ink, owned by the row rather than the view, so switching to the number pad and back (which
+     * disposes and re-creates the ink view) keeps the child's writing and the readings that belong to it.
+     */
+    internal var penStrokes: List<InkStroke> = emptyList()
+        private set
 
     /** Pen or number pad. The parent area (#27, behind the PIN) owns this; see [InputModeSettings]. */
     var mode by mutableStateOf(InputMode.Pen)
@@ -95,12 +101,18 @@ class DigitRowState(val cells: Int, val kind: CellKind = CellKind.Answer) {
 
     fun clear() {
         request++
+        penStrokes = emptyList()
         ink.clear()
         readings = emptyMap(); chosen = emptyMap()
         typed = List(cells) { null }; selected = 0
     }
 
-    internal fun inkChanged() { request++; readings = emptyMap(); chosen = emptyMap() }
+    /** From the ink view. A re-created view reporting the same strokes (after a mode switch) keeps the readings. */
+    internal fun inkChanged(strokes: List<InkStroke>) {
+        if (strokes == penStrokes) return
+        penStrokes = strokes
+        request++; readings = emptyMap(); chosen = emptyMap()
+    }
 
     /**
      * Reads every inked cell. Results for ink that changed meanwhile, or from a superseded request, are
@@ -132,7 +144,7 @@ fun DigitInkRow(state: DigitRowState, modifier: Modifier = Modifier, cellSize: D
     val size = cellSize * state.kind.scale
     Column(modifier.testTag("digit-row"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (state.mode == InputMode.Pen) {
-            InkBoxes(state.cells, state.ink, boxSize = size, onInk = { state.inkChanged(); onInk() })
+            InkBoxes(state.cells, state.ink, boxSize = size, initial = state.penStrokes, onInk = { state.inkChanged(it); onInk() })
             val questions = state.questions
             if (questions.isNotEmpty() || state.unreadable.isNotEmpty()) Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 questions.toSortedMap().forEach { (cell, ask) ->

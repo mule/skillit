@@ -120,6 +120,34 @@ class InkCellsTest {
         dir.deleteRecursively()
     }
 
+    @Test fun switchingPenToPadAndBackKeepsInkAndItsAnswer() {
+        val state = DigitRowState(2)
+        rule.setContent { SkillitTheme { DigitInkRow(state, cellSize = 150.dp) } }
+        rule.waitForIdle()
+        var v = inkViews().single()
+        val cell = v.row.boxWidth
+        stroke(v, 30f)
+        stroke(v, cell + 90f)
+        runBlocking { assertTrue(state.recognize(FakeRecognizer(mapOf(30f to listOf(RawCandidate("4", 0f)), 90f to listOf(RawCandidate("2", 0f)))))) }
+        rule.waitForIdle()
+        assertEquals("42", state.answer)
+        rule.runOnUiThread { state.mode = InputMode.NumberPad }
+        rule.waitForIdle()
+        assertTrue(inkViews().isEmpty())
+        rule.runOnUiThread { state.mode = InputMode.Pen }
+        rule.waitForIdle()
+        v = inkViews().single()
+        assertEquals("ink is back", 2, v.strokes.size)
+        assertEquals("answer still matches the ink on screen", "42", state.answer)
+        assertEquals(setOf(0, 1), state.strokesByCell().keys)
+        val dir = File(rule.activity.cacheDir, "switch-ink").apply { deleteRecursively() }
+        assertNotNull("attempt can still be saved", AttemptInkStore(dir).save("k", state))
+        // New writing after the switch still invalidates the old answer.
+        stroke(v, 60f)
+        assertNull(state.answer)
+        dir.deleteRecursively()
+    }
+
     @Test fun staleRecognitionIsDroppedWhenInkChanges() {
         val state = DigitRowState(1)
         rule.setContent { SkillitTheme { DigitInkCell(state, cellSize = 150.dp) } }

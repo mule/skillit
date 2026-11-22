@@ -18,14 +18,24 @@ data class CellInk(val strokes: List<InkStroke>, val digit: Int?)
  * One file per attempt, written to a temporary file and renamed, so a full disk can't leave a half file.
  * [prune] keeps storage bounded; #28 decides the retention.
  */
-class AttemptInkStore(private val dir: File, private val clock: () -> Long = System::currentTimeMillis) {
+class AttemptInkStore(
+    private val dir: File,
+    /** Test hook for disk-full and similar failures. */
+    internal val writer: (File, String) -> Unit = { f, text -> f.writeText(text) },
+    private val clock: () -> Long = System::currentTimeMillis,
+) {
     fun save(key: String, cells: Map<Int, CellInk>): AttemptInk {
         if (!dir.isDirectory && !dir.mkdirs()) throw IOException("could not create $dir")
         val attempt = AttemptInk(key, clock(), cells.filterValues { it.strokes.isNotEmpty() })
         val file = fileOf(key)
         val tmp = File(dir, file.name + ".tmp")
-        tmp.writeText(encode(attempt))
-        if (!tmp.renameTo(file)) { tmp.delete(); throw IOException("could not write $file") }
+        try {
+            writer(tmp, encode(attempt))
+            if (!tmp.renameTo(file)) throw IOException("could not write $file")
+        } finally {
+            // Never leave a half-written copy of the child's strokes behind (security F1).
+            if (tmp.exists()) tmp.delete()
+        }
         return attempt
     }
 
@@ -36,15 +46,19 @@ class AttemptInkStore(private val dir: File, private val clock: () -> Long = Sys
 
     fun delete(key: String) { fileOf(key).delete() }
 
-    fun deleteAll() { files().forEach { it.delete() } }
+    /** Deletes every attempt, including temporary files left by a crash mid-write. */
+    fun deleteAll() { files().forEach { it.delete() }; leftovers().forEach { it.delete() } }
 
     /** Keeps the newest [maxAttempts] attempts and deletes the rest. */
     fun prune(maxAttempts: Int) {
         val keep = all().takeLast(maxAttempts).map { fileOf(it.key).name }.toSet()
         files().filter { it.name !in keep }.forEach { it.delete() }
+        leftovers().forEach { it.delete() }
     }
 
     private fun files() = dir.listFiles { f -> f.isFile && f.name.endsWith(EXT) }.orEmpty().toList()
+    /** `*.ink.tmp` from a write that was interrupted (process killed between write and rename). */
+    private fun leftovers() = dir.listFiles { f -> f.isFile && f.name.endsWith("$EXT.tmp") }.orEmpty().toList()
 
     /** File names come from the key, base64url-encoded, so any key is a safe, collision-free name. */
     private fun fileOf(key: String) = File(dir, Base64.getUrlEncoder().withoutPadding().encodeToString(key.toByteArray()) + EXT)

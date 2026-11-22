@@ -4,6 +4,7 @@ import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import java.io.File
 
 class InkCellsTest {
     @get:Rule val tmp = TemporaryFolder()
@@ -35,6 +36,26 @@ class InkCellsTest {
         assertNull(store.load("a4"))
         store.deleteAll()
         assertTrue(store.all().isEmpty())
+    }
+
+    @Test fun failedWriteLeavesNoTemporaryStrokes() {
+        val dir = tmp.newFolder("full")
+        val store = AttemptInkStore(dir, writer = { f, text -> f.writeText(text.take(10)); throw java.io.IOException("No space left on device") })
+        assertThrows(java.io.IOException::class.java) { store.save("k", mapOf(0 to CellInk(listOf(stroke(1f to 1f)), 1))) }
+        assertTrue("no .tmp after a failed write: ${dir.list()!!.toList()}", dir.listFiles()!!.isEmpty())
+    }
+
+    @Test fun crashLeftTemporaryFilesAreDeletedByDeleteAllAndPrune() {
+        val dir = tmp.newFolder("crashed")
+        val store = AttemptInkStore(dir)
+        store.save("kept", mapOf(0 to CellInk(listOf(stroke(1f to 1f)), 1)))
+        File(dir, "a2V5.ink.tmp").writeText("v1\tx\t1\n0\t1\t1.0 1.0 1 1.0\n")
+        store.prune(10)
+        assertEquals(listOf("kept"), store.all().map { it.key })
+        assertTrue(dir.listFiles()!!.none { it.name.endsWith(".tmp") })
+        File(dir, "b.ink.tmp").writeText("strokes")
+        store.deleteAll()
+        assertTrue(dir.listFiles()!!.isEmpty())
     }
 
     @Test fun corruptAttemptFilesAreSkipped() {

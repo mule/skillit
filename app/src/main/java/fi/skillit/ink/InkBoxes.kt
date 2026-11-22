@@ -37,7 +37,7 @@ class InkBoxesController {
 @Composable
 fun InkBoxes(
     boxCount: Int, controller: InkBoxesController, modifier: Modifier = Modifier, boxSize: Dp = 120.dp,
-    lowLatency: Boolean = !isEmulator(), onInk: (List<InkStroke>) -> Unit = {},
+    lowLatency: Boolean = !isEmulator(), initial: List<InkStroke> = emptyList(), onInk: (List<InkStroke>) -> Unit = {},
 ) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle, controller) {
@@ -55,6 +55,8 @@ fun InkBoxes(
     AndroidView(
         factory = { DigitInkView(it, boxCount, lowLatency).also { v ->
             controller.view = v
+            // Put back ink kept by the caller (e.g. after a pen → number pad → pen switch). onInk isn't wired yet.
+            if (initial.isNotEmpty()) v.restore(initial)
             if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) v.pauseInk()
         } },
         update = { it.boxCount = boxCount; it.onInkChanged = onInk; controller.view = it },
