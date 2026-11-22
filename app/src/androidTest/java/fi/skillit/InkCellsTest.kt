@@ -1,5 +1,6 @@
 package fi.skillit
 
+import android.content.Intent
 import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
@@ -45,11 +46,42 @@ class InkCellsTest {
         rule.waitForIdle()
     }
 
+    /** Polls the activity's real lifecycle (set by the system, not faked) until [want] holds. */
+    private fun awaitLifecycle(what: String, want: (Lifecycle.State) -> Boolean) {
+        val until = SystemClock.uptimeMillis() + 10_000
+        while (true) {
+            var state = Lifecycle.State.INITIALIZED
+            rule.runOnUiThread { state = rule.activity.lifecycle.currentState }
+            if (want(state)) return
+            if (SystemClock.uptimeMillis() > until) fail("activity never $what (state $state)")
+            Thread.sleep(50)
+        }
+    }
+
     /**
-     * Background the activity mid-stroke and come back. The stroke in progress is dropped and writing works
-     * again. On a real tablet the front-buffered layer is also released while hidden and re-created on resume.
-     * Emulators never create that layer: on the API 35 CI emulator graphics-core's front buffer crashes hwui's
-     * RenderThread as soon as it is created, even with the window visible, so the layer checks run on devices only.
+     * Really sends the task to the back, so the system stops the activity. Not `ActivityScenario.moveToState`:
+     * that opens a second activity on top, and in One UI's desktop (freeform) windowing it opens beside ours,
+     * both stay resumed and the activity is never stopped (seen on the Tab S9).
+     */
+    private fun background() {
+        rule.runOnUiThread { assertTrue("task moved back", rule.activity.moveTaskToBack(true)) }
+        awaitLifecycle("stopped") { !it.isAtLeast(Lifecycle.State.STARTED) }
+    }
+
+    /** Brings the same activity instance back to the front, as tapping its window or recents entry would. */
+    private fun foreground() {
+        val a = rule.activity
+        a.startActivity(Intent(a, a.javaClass).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+        awaitLifecycle("resumed") { it == Lifecycle.State.RESUMED }
+        rule.waitForIdle()
+    }
+
+    /**
+     * Background the activity mid-stroke (a real onPause/onStop, as when the child presses Home) and come back.
+     * The stroke in progress is dropped and writing works again. On a real tablet the front-buffered layer is
+     * also released while hidden and re-created on resume. Emulators never create that layer: on the API 35 CI
+     * emulator graphics-core's front buffer crashes hwui's RenderThread as soon as it is created, even with the
+     * window visible, so the layer checks run on devices only.
      */
     @Test fun backgroundingMidStrokeReleasesAndRestoresTheLiveLayer() {
         val controller = InkBoxesController()
@@ -63,10 +95,9 @@ class InkCellsTest {
             v.dispatchTouchEvent(event(down, MotionEvent.ACTION_DOWN, 220f, 20f))
             v.dispatchTouchEvent(event(down, MotionEvent.ACTION_MOVE, 220f, 70f))
         }
-        rule.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+        background()
         rule.runOnUiThread { assertFalse("front buffer released while hidden", v.hasLiveLayer) }  // always true when off
-        rule.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
-        rule.waitForIdle()
+        foreground()
         rule.runOnUiThread {
             assertEquals("front buffer back on resume (devices)", v.lowLatency, v.hasLiveLayer)
             // The rest of the interrupted stroke must not commit anything.
@@ -79,8 +110,10 @@ class InkCellsTest {
         assertEquals(2, v.strokes.size)
         // A few more pause/resume cycles with ink on screen: no crash.
         repeat(3) {
-            rule.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
-            rule.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+            background()
+            rule.runOnUiThread { assertFalse(v.hasLiveLayer) }
+            foreground()
+            rule.runOnUiThread { assertEquals(v.lowLatency, v.hasLiveLayer) }
         }
         rule.waitForIdle()
         assertEquals(2, v.strokes.size)
