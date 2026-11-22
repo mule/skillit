@@ -3,7 +3,7 @@
 
 1. The merged *release* manifest may only contain the permissions and components listed in
    app/release-manifest-allowlist.txt, and must not contain ML Kit's telemetry upload backend.
-2. No network client code under app/src/main until M4b (sync) is designed.
+2. No network client imports in app/engine/mathgen production sources until M4b (sync) is designed.
 
 Run after `./gradlew :app:processReleaseManifest`. Exit code 1 on any violation.
 Update the allowlist only together with a privacy review (issue #30).
@@ -16,7 +16,7 @@ import xml.etree.ElementTree as ET
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 MANIFEST = ROOT / "app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml"
 ALLOWLIST = ROOT / "app/release-manifest-allowlist.txt"
-SOURCES = ROOT / "app/src/main"
+SOURCE_ROOTS = tuple(ROOT / module / "src/main" for module in ("app", "engine", "mathgen"))
 A = "{http://schemas.android.com/apk/res/android}"
 
 FORBIDDEN_BACKEND = "backend:com.google.android.datatransport.cct.CctBackendFactory"
@@ -50,9 +50,11 @@ def main():
         problems.append(f"manifest: allowlisted but gone (tidy the allowlist): {e}")
     if FORBIDDEN_BACKEND in backends:
         problems.append("manifest: ML Kit telemetry upload backend (CCT) is back; see AndroidManifest.xml")
-    for f in sorted(SOURCES.rglob("*.kt")) + sorted(SOURCES.rglob("*.java")):
-        for m in NETWORK_IMPORTS.finditer(f.read_text(encoding="utf-8")):
-            line = f.read_text(encoding="utf-8")[: m.start()].count("\n") + 1
+    sources = sorted(f for source in SOURCE_ROOTS for pattern in ("*.kt", "*.java") for f in source.rglob(pattern))
+    for f in sources:
+        text = f.read_text(encoding="utf-8")
+        for m in NETWORK_IMPORTS.finditer(text):
+            line = text[: m.start()].count("\n") + 1
             problems.append(f"source: network client import in {f.relative_to(ROOT)}:{line}: {m.group(0).strip()}")
     if problems:
         print("Release privacy check FAILED:\n  " + "\n  ".join(problems))
