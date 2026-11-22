@@ -3,7 +3,6 @@ package fi.skillit
 import androidx.activity.compose.setContent
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.lifecycle.Lifecycle
 import fi.skillit.music.*
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
@@ -61,9 +60,9 @@ class PlaybackUiTest {
         compose.runOnIdle { assertFalse(output.active) }
         tap("Asetukset"); compose.onNodeWithContentDescription("Äänet mykistetty").performClick(); tap("Sulje")
         hear()
-        compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
-        assertFalse(output.active)
-        compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        compose.background()
+        compose.runOnIdle { assertFalse(output.active) }
+        compose.foreground()
         hear(); tap("Rytmipaja")
         compose.runOnIdle { assertFalse(output.active) }
         tap("Takaisin kartalle"); hear(); tap("Aloita seikkailu")
