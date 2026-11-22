@@ -33,6 +33,11 @@ class DigitInkView(context: Context, boxCount: Int) : FrameLayout(context), InPr
     /** Called on the main thread after every finished, erased or cleared stroke. */
     var onInkChanged: (List<InkStroke>) -> Unit = {}
 
+    /** Increases on every change to the ink. A recognition result for an older revision is stale. */
+    var revision = 0
+        private set
+    private fun changed() { revision++; onInkChanged(strokes) }
+
     val policy = PenPolicy()
     private val live = InProgressStrokesView(context)
     private val renderer = CanvasStrokeRenderer.create()
@@ -72,11 +77,11 @@ class DigitInkView(context: Context, boxCount: Int) : FrameLayout(context), InPr
         live.cancelUnfinishedStrokes()
         activePointer = -1; activeId = null; activePoints = mutableListOf(); erasing = false
         written.clear(); pending.clear()
-        invalidate(); onInkChanged(strokes)
+        invalidate(); changed()
     }
 
     /** Replaces the ink, e.g. when restoring a saved attempt. Restored strokes are drawn as thin lines. */
-    fun restore(ink: List<InkStroke>) { clear(); ink.forEach { written += Written(it) }; invalidate(); onInkChanged(strokes) }
+    fun restore(ink: List<InkStroke>) { clear(); ink.forEach { written += Written(it) }; invalidate(); changed() }
 
     override fun onStrokesFinished(strokes: Map<InProgressStrokeId, Stroke>) {
         strokes.forEach { (id, stroke) -> pending.remove(id)?.rendered = stroke }
@@ -142,7 +147,7 @@ class DigitInkView(context: Context, boxCount: Int) : FrameLayout(context), InPr
                         live.finishStroke(event, activePointer, id)
                         val w = Written(InkStroke(activePoints.toList()))
                         written += w; pending[id] = w
-                        onInkChanged(strokes)
+                        changed()
                     }
                 }
                 activePointer = -1; activeId = null; erasing = false; activePoints = mutableListOf()
@@ -156,7 +161,7 @@ class DigitInkView(context: Context, boxCount: Int) : FrameLayout(context), InPr
     private fun eraseAt(x: Float, y: Float) {
         val before = written.size
         written.removeAll { StrokeEraser.hits(it.ink, x, y, eraserRadius) }
-        if (written.size != before) { pending.values.retainAll(written.toSet()); invalidate(); onInkChanged(strokes) }
+        if (written.size != before) { pending.values.retainAll(written.toSet()); invalidate(); changed() }
     }
 
     override fun onDraw(canvas: Canvas) {

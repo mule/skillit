@@ -5,6 +5,10 @@ import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -12,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import fi.skillit.ink.*
 import fi.skillit.inklab.InkLab
 import fi.skillit.inklab.InkSampleStore
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.junit.Assert.*
@@ -101,7 +106,7 @@ class InkInputTest {
         val fake = object : DigitRecognizer {
             override val modelTag = "fake"
             override val state: StateFlow<ModelState> = MutableStateFlow(ModelState.Ready)
-            override suspend fun prepare() {}
+            override suspend fun prepare(allowDownload: Boolean) {}
             override suspend fun recognize(strokes: List<InkStroke>, width: Float, height: Float) =
                 listOf(RawCandidate("4", 1f), RawCandidate("9", 1.2f))
         }
@@ -137,6 +142,105 @@ class InkInputTest {
         assertEquals("fake", saved.model)
         assertTrue(saved.strokes.single().points.size >= 3)
         rule.onNodeWithTag("report").assertExists()
+    }
+
+    /** A recogniser that waits for [gate] and can fail, to test the lab's async edges. */
+    private class GatedRecognizer(var fail: Boolean = false) : DigitRecognizer {
+        override val modelTag = "gated"
+        override val state: StateFlow<ModelState> = MutableStateFlow(ModelState.Ready)
+        @Volatile var gate = CompletableDeferred<Unit>()
+        @Volatile var calls = 0
+        override suspend fun prepare(allowDownload: Boolean) {}
+        override suspend fun recognize(strokes: List<InkStroke>, width: Float, height: Float): List<RawCandidate> {
+            calls++
+            gate.await()
+            if (fail) throw IllegalStateException("fake inference failure")
+            return listOf(RawCandidate("4", 0f))
+        }
+    }
+
+    private fun openLab(store: InkSampleStore, fake: DigitRecognizer) {
+        rule.setContent { SkillitTheme { InkLab(store, recognizerFactory = { fake }) } }
+        rule.waitForIdle()
+    }
+
+    private fun writeIn(v: DigitInkView, x: Float = 100f) {
+        rule.runOnUiThread {
+            val down = SystemClock.uptimeMillis()
+            v.dispatchTouchEvent(event(down, MotionEvent.ACTION_DOWN, x, 40f, MotionEvent.TOOL_TYPE_STYLUS))
+            v.dispatchTouchEvent(event(down, MotionEvent.ACTION_MOVE, x, 150f, MotionEvent.TOOL_TYPE_STYLUS))
+            v.dispatchTouchEvent(event(down, MotionEvent.ACTION_UP, x, 250f, MotionEvent.TOOL_TYPE_STYLUS))
+        }
+        rule.waitForIdle()
+    }
+
+    private fun recorderView() = findInkViews(rule.activity.window.decorView).last()
+    private fun tryView() = findInkViews(rule.activity.window.decorView).first()
+    private fun labDir(name: String) = File(rule.activity.cacheDir, name).apply { deleteRecursively() }
+    private fun lines(dir: File) = File(dir, "samples-v1.txt").let { if (it.exists()) it.readLines() else emptyList() }
+
+    @Test fun slowSaveKeepsItsLabelAndCannotBeDoubled() {
+        val dir = labDir("ink-lab-slow")
+        val fake = GatedRecognizer()
+        openLab(InkSampleStore(dir), fake)
+        writeIn(recorderView())
+        rule.onNodeWithTag("save").performScrollTo().performClick()
+        rule.waitForIdle()
+        // While recognition is pending: switching the digit and saving again must do nothing.
+        rule.onNodeWithTag("digit-1").performScrollTo().assertIsNotEnabled().performClick()
+        rule.onNodeWithTag("save").assertIsNotEnabled().performClick()
+        rule.waitForIdle()
+        // New ink written during the wait must survive the save's completion.
+        writeIn(recorderView(), x = 200f)
+        fake.gate.complete(Unit)
+        rule.waitUntil(5_000) { lines(dir).isNotEmpty() }
+        rule.waitForIdle()
+        assertEquals(1, fake.calls)
+        assertEquals(1, lines(dir).size)
+        assertEquals(0, InkSampleCodec.decode(lines(dir).single())!!.label)
+        assertEquals("saved stroke removed, newer ink kept", listOf(200f), recorderView().strokes.map { it.points.first().x })
+        rule.onNodeWithTag("digit-0").assertTextContains("0 · 1/10")
+    }
+
+    @Test fun staleTryResultIsDroppedAfterClear() {
+        val fake = GatedRecognizer()
+        openLab(InkSampleStore(labDir("ink-lab-stale")), fake)
+        writeIn(tryView(), x = 60f)
+        rule.onNodeWithText("Tunnista").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText("Tyhjennä").performClick()
+        fake.gate.complete(Unit)
+        rule.waitForIdle()
+        Thread.sleep(300)
+        rule.waitForIdle()
+        assertFalse(rule.onAllNodesWithTextExists("Ruutu 1:", substring = true))
+    }
+
+    @Test fun failedInferenceShowsRetryAndSavesNothing() {
+        val dir = labDir("ink-lab-fail")
+        val fake = GatedRecognizer(fail = true).apply { gate.complete(Unit) }
+        openLab(InkSampleStore(dir), fake)
+        writeIn(recorderView())
+        rule.onNodeWithTag("save").performScrollTo().performClick()
+        rule.waitUntil(5_000) { rule.onAllNodes(hasTestTag("lab-error")).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithTag("lab-error").assertTextContains("Tallennus epäonnistui", substring = true)
+        assertTrue(lines(dir).isEmpty())
+        assertEquals("ink kept for retry", 1, recorderView().strokes.size)
+        fake.fail = false
+        rule.onNodeWithTag("save").performScrollTo().assertIsEnabled().performClick()
+        rule.waitUntil(5_000) { lines(dir).size == 1 }
+    }
+
+    @Test fun failedStoreWriteShowsRetryAndCountsNothing() {
+        // A regular file where the sample directory should be: every write fails like a full disk.
+        val blocked = labDir("ink-lab-blocked").apply { writeText("not a directory") }
+        openLab(InkSampleStore(blocked), GatedRecognizer().apply { gate.complete(Unit) })
+        writeIn(recorderView())
+        rule.onNodeWithTag("save").performScrollTo().performClick()
+        rule.waitUntil(5_000) { rule.onAllNodes(hasTestTag("lab-error")).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithTag("digit-0").assertTextContains("0 · 0/10")
+        rule.onNodeWithTag("save").assertIsEnabled()
+        assertEquals(1, recorderView().strokes.size)
     }
 
     private fun androidx.compose.ui.test.junit4.ComposeTestRule.onAllNodesWithTextExists(text: String, substring: Boolean) =
